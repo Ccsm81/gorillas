@@ -1553,7 +1553,7 @@ document.getElementById('lcopy').addEventListener('click', () => {
 // hook-uri apelate de modulul Trystero
 window.__mpStatus = lobbyStatus;
 window.__mpConnected = () => { lobbyStatus('Conectat! Începem…'); };
-window.__mpPeerLeft = () => { showToast('Adversarul a plecat', 200); mpActive = false; };
+window.__mpPeerLeft = () => { showToast('⚠️ Adversar deconectat — aștept reconectarea…', 250); }; // NU închidem meciul: dacă revine (blip de rețea), continuăm de unde am rămas
 // auto-join din link ?r=COD
 (function () {
   const m = location.search.match(/[?&]r=([A-Za-z0-9]+)/);
@@ -1561,7 +1561,7 @@ window.__mpPeerLeft = () => { showToast('Adversarul a plecat', 200); mpActive = 
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v10';
+const APP_VERSION = 'v11';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)
@@ -1605,35 +1605,41 @@ loop();
       ],
     },
   };
-  let room = null, sendShot = null, isHost = false, started = false, joinTimer = null;
+  let room = null, sendShot = null, sendPing = null, isHost = false, started = false, joinTimer = null, hbTimer = null, peerHere = false;
 
   window.__mpConnect = function (code, asHost) {
     if (!joinRoom) { st('❌ Modul online neîncărcat' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')); return; }
     try {
-      isHost = asHost; started = false;
+      isHost = asHost; started = false; peerHere = false;
       st('📡 Conectare la relee…');
       room = joinRoom(config, 'gorillas-' + code);
       const [sShot, gShot] = room.makeAction('shot');
-      sendShot = sShot;
+      const [sPing, gPing] = room.makeAction('ping');
+      sendShot = sShot; sendPing = sPing;
       window.__mpSend = (obj) => { if (obj && obj.t === 'shot' && sendShot) sendShot(obj); };
       gShot((d) => { if (window.mpApplyShot) window.mpApplyShot(d.a, d.v, d.w); });
+      gPing(() => {}); // heartbeat de la adversar — ține conexiunea vie (NAT mobil închide la inactivitate)
       st(asHost ? '🟢 În cameră ' + code + ' — aștept adversarul…' : '🔌 În cameră ' + code + ' — caut host-ul…');
+      // HEARTBEAT: trimit un semnal la 6s ca să nu se închidă conexiunea în pauzele dintre ture
+      clearInterval(hbTimer);
+      hbTimer = setInterval(() => { try { if (sendPing && peerHere) sendPing(1); } catch (e) {} }, 6000);
       // ambele pornesc la conectare cu seed derivat din COD (fără schimb de seed → imposibil să difere harta)
       room.onPeerJoin(() => {
         clearTimeout(joinTimer);
-        if (started) return;
+        peerHere = true;
+        if (started) { if (window.__mpStatus) window.__mpStatus('🔄 Reconectat!'); return; } // reconectare după un blip — continuăm
         started = true;
         st('✅ Adversar găsit! Pornesc…');
         if (window.mpStart) window.mpStart(code, asHost ? 0 : 1);
       });
-      room.onPeerLeave(() => { if (window.__mpPeerLeft) window.__mpPeerLeft(); });
+      room.onPeerLeave(() => { peerHere = false; if (window.__mpPeerLeft) window.__mpPeerLeft(); });
       clearTimeout(joinTimer);
       joinTimer = setTimeout(() => { if (!started) st('⏳ Încă nu s-a conectat. Verifică: ACELAȘI cod pe ambele + internet bun. Mai aștept…'); }, 22000);
     } catch (e) {
       st('❌ Eroare: ' + (e && e.message || e));
     }
   };
-  window.__mpDisconnect = function () { try { if (room) room.leave(); } catch (e) {} room = null; window.__mpSend = null; started = false; };
+  window.__mpDisconnect = function () { try { clearInterval(hbTimer); if (room) room.leave(); } catch (e) {} room = null; window.__mpSend = null; started = false; peerHere = false; };
   st(joinRoom ? 'Modul online gata.' : ('❌ Modul online nu s-a încărcat' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')));
 </script>
 </body>

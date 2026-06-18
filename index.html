@@ -1574,7 +1574,7 @@ loop();
   const st = (m) => { if (window.__mpStatus) window.__mpStatus(m); };
   let joinRoom = null;
   try {
-    ({ joinRoom } = await import('https://esm.sh/trystero@0.25.2/nostr'));
+    ({ joinRoom } = await import('https://esm.sh/trystero@0.21.5/nostr'));
     window.__mpReady = true;
   } catch (e) {
     window.__mpLoadError = String(e && e.message || e);

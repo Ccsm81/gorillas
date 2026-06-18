@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gorillas">
+<meta name="theme-color" content="#0a0418">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Gorillas — Artillery</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+  body {
+    background: #0a0418;
+    color: #fff;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    overflow-x: hidden;
+    overflow-y: auto;            /* fallback: scroll dacă totuși nu încape */
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px;
+  }
+  h1 {
+    font-size: 22px;
+    color: #ffd700;
+    letter-spacing: 6px;
+    text-shadow: 0 0 18px rgba(255,215,0,0.55);
+  }
+  canvas {
+    display: block;
+    border: 3px solid #5a3e6e;
+    border-radius: 6px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.7), inset 0 0 80px rgba(0,0,0,0.3);
+    /* responsiv: încape pe lățime ȘI pe înălțime (lasă ~210px pt controale). Raport 1100:540 ≈ 2.037 */
+    width: min(calc(100vw - 12px), calc((100dvh - 210px) * 2.037));
+    height: auto;
+    max-width: 1100px;
+    touch-action: none;          /* viitor: drag-to-aim pe canvas */
+  }
+  #panel {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: rgba(20,8,40,0.85);
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid #5a3e6e;
+    font-size: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 1100px;
+  }
+  #panel label { display: flex; align-items: center; gap: 6px; }
+  #panel input {
+    background: #1a0d2e;
+    color: #ffd700;
+    border: 1px solid #5a3e6e;
+    padding: 6px 8px;
+    border-radius: 4px;
+    width: 64px;
+    font-size: 15px;
+    text-align: center;
+    font-family: inherit;
+    color-scheme: dark;
+    accent-color: #fff;
+  }
+  #panel input[type=number]::-webkit-inner-spin-button,
+  #panel input[type=number]::-webkit-outer-spin-button {
+    opacity: 1;
+    filter: brightness(0) invert(1);
+  }
+  #panel input:focus { outline: none; border-color: #ffd700; }
+  button {
+    background: linear-gradient(180deg, #ff7340, #d04820);
+    color: #fff;
+    border: 1px solid #ff9560;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    font-family: inherit;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+  }
+  button:hover { background: linear-gradient(180deg, #ff8550, #e05830); }
+  button:active { transform: translateY(1px); }
+  button.sec { background: linear-gradient(180deg, #5a3e6e, #3a2850); border-color: #6e5080; }
+  button.sec:hover { background: linear-gradient(180deg, #6e5080, #4a3060); }
+  #status { font-size: 15px; color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.4); letter-spacing: 1px; }
+
+  /* ── progress / rank bar ── */
+  #rankbar {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(20,8,40,0.85);
+    border: 1px solid #5a3e6e; border-radius: 8px;
+    padding: 7px 16px; font-size: 13px; max-width: 1100px;
+  }
+  #rankbar .rk { color: #ffd700; font-weight: bold; font-size: 15px; }
+  #xpwrap { width: 220px; height: 12px; background: #1a0d2e; border: 1px solid #5a3e6e; border-radius: 6px; overflow: hidden; }
+  #xpfill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffd700, #ff8c33); transition: width .35s; }
+  #nextunlock { color: #aaa; }
+  #nextunlock b { color: #6cf; }
+
+  /* ── weapon selector ── */
+  #weapons {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    max-width: 1100px;
+  }
+  .wchip {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 78px; padding: 5px 4px; border-radius: 6px; cursor: pointer;
+    background: #1a0d2e; border: 1px solid #5a3e6e; user-select: none;
+    transition: transform .08s, border-color .12s;
+  }
+  .wchip:hover { transform: translateY(-2px); }
+  .wchip .ic { font-size: 20px; line-height: 1; }
+  .wchip .nm { font-size: 10px; color: #ddd; margin-top: 2px; text-align: center; }
+  .wchip.sel { border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.4); background: #2a1840; }
+  .wchip.locked { opacity: 0.42; cursor: not-allowed; filter: grayscale(0.7); }
+  .wchip.locked .nm { color: #f88; }
+  .wchip.weak { border-color: #b0405a; box-shadow: 0 0 8px rgba(255,80,110,0.45); }
+  .wchip.weak::after { content: '⚠'; position: absolute; margin-top: -34px; margin-left: 56px; font-size: 11px; }
+  .wchip { position: relative; }
+  #hint { color: #bbb; font-size: 12px; font-style: italic; max-width: 1000px; text-align: center; }
+  #hint b { color: #ffd700; font-style: normal; }
+
+  /* ─────────── TELEFON: ecran scund (landscape) — fă loc pe verticală ─────────── */
+  @media (max-height: 560px) {
+    body { gap: 4px; padding: 4px; justify-content: flex-start; }
+    h1 { display: none; }
+    #status { font-size: 11px; letter-spacing: 0; }
+    #rankbar { display: none; }       /* XP nu e esențial în timpul jocului */
+    #hint { display: none; }
+    #panel { padding: 5px 8px; gap: 7px; font-size: 12px; }
+    #panel input { width: 54px; padding: 4px; font-size: 14px; }
+    button { padding: 6px 10px; font-size: 12px; }
+    canvas { width: min(calc(100vw - 8px), calc((100dvh - 130px) * 2.037)); }
+    #weapons { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; max-width: 100vw; -webkit-overflow-scrolling: touch; padding: 0 4px 2px; }
+    .wchip { width: 58px; flex: 0 0 auto; }
+    .wchip .ic { font-size: 17px; } .wchip .nm { font-size: 9px; }
+  }
+  /* ─────────── TELEFON: ecran îngust (portrait) — chips pe un rând glisabil ─────────── */
+  @media (max-width: 760px) {
+    h1 { font-size: 18px; letter-spacing: 3px; }
+    #panel { gap: 8px; font-size: 13px; }
+    #weapons { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; max-width: 100vw; -webkit-overflow-scrolling: touch; padding: 0 4px 4px; }
+    .wchip { flex: 0 0 auto; }
+    #hint { font-size: 11px; }
+  }
+
+  /* ════════════ CONTROALE MOBIL (doar pe touch) ════════════ */
+  .vslider, .fab, #woverlay { display: none; }   /* ascunse pe desktop implicit */
+
+  body.touch { gap: 0; padding: 0; justify-content: center; }
+  body.touch h1, body.touch #status, body.touch #rankbar, body.touch #weapons, body.touch #hint,
+  body.touch #lblAngle, body.touch #lblVel, body.touch #fire { display: none; }
+  body.touch canvas { width: min(calc(100vw - 4px), calc(100dvh * 2.037)); max-width: none; border-width: 0; border-radius: 0; }
+
+  /* bară utilitare sus (refolosește #panel) */
+  body.touch #panel {
+    position: fixed; top: 5px; left: 5px; right: auto; z-index: 30;
+    background: rgba(20,8,40,0.6); padding: 4px 7px; gap: 6px; font-size: 11px;
+    border-radius: 18px; flex-wrap: nowrap; max-width: none;
+  }
+  body.touch #panel #turnLabel { font-size: 12px; }
+  body.touch #panel button { padding: 5px 8px; font-size: 11px; }
+
+  /* slidere verticale */
+  body.touch .vslider { display: block; position: fixed; top: 50%; transform: translateY(-50%);
+    left: 4px; width: 58px; height: min(66dvh, 380px); z-index: 25;
+    background: rgba(10,5,22,0.55); border: 1px solid rgba(255,255,255,0.18); border-radius: 14px; touch-action: none; }
+  body.touch .vslider.right { left: auto; right: 4px; }
+  .vslider .vfill { position: absolute; left: 3px; right: 3px; bottom: 3px; border-radius: 11px;
+    background: linear-gradient(0deg,#1f7fb8,#7fd0ff); opacity: 0.5; height: 50%; }
+  .vslider.right .vfill { background: linear-gradient(0deg,#b85a1f,#ffb56b); }
+  .vslider .vthumb { position: absolute; left: 4px; right: 4px; height: 40px; border-radius: 10px;
+    background: #7fd0ff; box-shadow: 0 0 10px rgba(127,208,255,0.7); bottom: 50%; }
+  .vslider.right .vthumb { background: #ffb56b; box-shadow: 0 0 10px rgba(255,181,107,0.7); }
+  .vslider .vlabel { position: absolute; top: -42px; left: 0; right: 0; text-align: center;
+    font-size: 11px; color: #fff; text-shadow: 0 1px 3px #000; line-height: 1.2; }
+  .vslider .vlabel b { font-size: 17px; color: #ffd700; }
+  body.touch .vslider.disabled { opacity: 0.35; pointer-events: none; }
+
+  /* butoane plutitoare */
+  body.touch .fab { display: flex; align-items: center; justify-content: center; position: fixed; z-index: 30;
+    border-radius: 50%; border: 2px solid rgba(255,255,255,0.35); color: #fff;
+    background: linear-gradient(180deg,#ff7340,#d04820); box-shadow: 0 3px 10px rgba(0,0,0,0.5); }
+  body.touch #fireFab { width: 74px; height: 74px; font-size: 30px; bottom: 14px; left: 50%; transform: translateX(-50%); }
+  body.touch #wbtn { width: 60px; height: 60px; font-size: 28px; bottom: 20px; left: calc(50% - 104px);
+    background: linear-gradient(180deg,#5a3e6e,#3a2850); }
+  body.touch #fsbtn { width: 44px; height: 44px; font-size: 19px; top: 6px; right: 6px;
+    background: linear-gradient(180deg,#5a3e6e,#3a2850); }
+
+  /* overlay alegere armă (tile-uri mari) */
+  #woverlay { position: fixed; inset: 0; z-index: 50; background: rgba(5,2,12,0.82);
+    align-items: center; justify-content: center; padding: 14px; }
+  #woverlay:not(.hidden) { display: flex; }
+  #wsheet { background: #1a0d2e; border: 1px solid #5a3e6e; border-radius: 14px; padding: 14px;
+    max-width: 560px; width: 100%; max-height: 92dvh; overflow-y: auto; }
+  #wgridTitle { color: #ffd700; font-size: 18px; text-align: center; margin-bottom: 10px; }
+  #wgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .wtile { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 4px;
+    background: #251640; border: 2px solid #4a3060; border-radius: 10px; cursor: pointer; user-select: none; }
+  .wtile .ic { font-size: 30px; } .wtile .nm { font-size: 11px; color: #ddd; text-align: center; }
+  .wtile.sel { border-color: #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.5); }
+  .wtile.weak { border-color: #b0405a; }
+  .wtile.weak .nm::after { content: ' ⚠'; }
+  #wclose { display: block; width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; }
+</style>
+</head>
+<body>
+<h1>GORILLAS</h1>
+<canvas id="c" width="1100" height="540"></canvas>
+
+<!-- ── Controale mobil (apar doar pe touch) ── -->
+<div id="angleSlider" class="vslider"><div class="vfill"></div><div class="vthumb"></div><div class="vlabel">UNGHI<br><b>45°</b></div></div>
+<div id="velSlider" class="vslider right"><div class="vfill"></div><div class="vthumb"></div><div class="vlabel">VITEZĂ<br><b>80</b></div></div>
+<button id="wbtn" class="fab">🍌</button>
+<button id="fireFab" class="fab">💥</button>
+<button id="fsbtn" class="fab small">⛶</button>
+<div id="woverlay" class="hidden"><div id="wsheet"><div id="wgridTitle">Alege arma</div><div id="wgrid"></div><button id="wclose">Închide</button></div></div>
+
+<div id="status">—</div>
+<div id="panel">
+  <span id="turnLabel">Jucător 1</span>
+  <label id="lblAngle">Unghi: <input id="angle" type="number" min="0" max="90" value="45"></label>
+  <label id="lblVel">Viteză: <input id="velocity" type="number" min="10" max="200" value="80"></label>
+  <button id="fire">Aruncă</button>
+  <button id="mode" class="sec">👥 2 Jucători</button>
+  <button id="sound" class="sec">🔊 Sunet</button>
+  <button id="preview" class="sec">🎯 Traseu: Scurt</button>
+  <button id="reset" class="sec">Restart meci</button>
+</div>
+<div id="rankbar">
+  <span class="rk" id="rkLabel">Rank 0</span>
+  <div id="xpwrap"><div id="xpfill"></div></div>
+  <span id="xptext"></span>
+  <span id="nextunlock"></span>
+</div>
+<div id="weapons"></div>
+<div id="hint"></div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const rand = (a, b) => Math.random() * (b - a) + a;
+const randInt = (a, b) => Math.floor(rand(a, b + 1));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// ════════════════════════ AUDIO (WebAudio sintetic — zero assets) ════════════════════════
+let AC = null;
+let soundOn = true;
+function audioOn() { // trebuie apelat la primul gest (iOS/Chrome blochează altfel)
+  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) {}
+}
+function tone({ freq = 200, type = 'sine', dur = 0.15, vol = 0.3, slideTo = null, delay = 0 }) {
+  if (!AC || !soundOn) return;
+  const t0 = AC.currentTime + delay;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq * rand(0.94, 1.06), t0);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t0 + dur);
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
+  o.connect(g).connect(AC.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function noiseBurst({ dur = 0.4, vol = 0.5, cutoff = 900 }) {
+  if (!AC || !soundOn) return;
+  const n = Math.floor(AC.sampleRate * dur), buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2); // decay = boom
+  const s = AC.createBufferSource(); s.buffer = buf;
+  const g = AC.createGain(); g.gain.value = vol;
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = cutoff * rand(0.85, 1.15);
+  s.connect(lp).connect(g).connect(AC.destination); s.start();
+}
+function sfxThrow()   { tone({ freq: 620, slideTo: 200, type: 'sawtooth', dur: 0.25, vol: 0.13 }); }
+function sfxBoom(big, nuke) {
+  noiseBurst({ dur: big ? 0.55 : 0.3, vol: big ? 0.55 : 0.32, cutoff: big ? 700 : 1100 });
+  if (nuke) { tone({ freq: 70, slideTo: 28, type: 'sine', dur: 1.2, vol: 0.5 }); tone({ freq: 140, slideTo: 50, type: 'square', dur: 0.7, vol: 0.2 }); }
+}
+function sfxCrunch()  { noiseBurst({ dur: 0.18, vol: 0.28, cutoff: 1600 }); }
+function sfxBounce()  { tone({ freq: 300, slideTo: 520, type: 'square', dur: 0.1, vol: 0.18 }); }
+function sfxRot()     { tone({ freq: 240, slideTo: 90, type: 'sawtooth', dur: 0.4, vol: 0.18 }); }
+function sfxWin()     { [523, 659, 784, 1046].forEach((f, i) => tone({ freq: f, type: 'triangle', dur: 0.18, vol: 0.22, delay: i * 0.12 })); }
+function sfxClick()   { tone({ freq: 420, type: 'square', dur: 0.05, vol: 0.12 }); }
+
+// ════════════════════════ THEMES (map variety) ════════════════════════
+const THEMES = [
+  { name: 'Apus', sky: 'linear-gradient(180deg,#ff5e6c 0%,#ff8a5c 22%,#ffb56b 42%,#b676a8 65%,#5e4e88 85%,#2a1b4d 100%)',
+    buildings: ['#3d2858','#5a3b6e','#2e1d40','#724e7e','#4a3060'], windowOn:'#ffd87c', windowOff:'#180a26', ground:'#15081f', orb:'sun', orbColor:'255,235,190' },
+  { name: 'Noapte', sky: 'linear-gradient(180deg,#06070f 0%,#0d1230 40%,#1a2350 75%,#26305e 100%)',
+    buildings: ['#10162e','#1a2340','#0a0f22','#222d50','#161d3a'], windowOn:'#ffe98a', windowOff:'#0a0f1e', ground:'#05060d', orb:'moon', orbColor:'235,240,255' },
+  { name: 'Zi senină', sky: 'linear-gradient(180deg,#7ec8ff 0%,#a8dcff 35%,#cfeaff 65%,#e8f4ff 100%)',
+    buildings: ['#6b7a99','#8593ad','#566080','#9aa6bd','#727f9c'], windowOn:'#fff7d0', windowOff:'#3a4360', ground:'#3c4257', orb:'sun', orbColor:'255,250,225' },
+  { name: 'Toxic', sky: 'linear-gradient(180deg,#0a2418 0%,#103a22 38%,#1d5230 70%,#2a6b3c 100%)',
+    buildings: ['#11331f','#1c4a2c','#0c2616','#266138','#173d24'], windowOn:'#b6ff7a', windowOff:'#08130c', ground:'#06140b', orb:'none', orbColor:'180,255,140' },
+  { name: 'Furtună', sky: 'linear-gradient(180deg,#2a2d3a 0%,#3c4150 35%,#52586a 65%,#6b7180 100%)',
+    buildings: ['#22242e','#30343f','#191b22','#3d4250','#272a33'], windowOn:'#ffe98a', windowOff:'#12131a', ground:'#101117', orb:'none', orbColor:'220,225,235' },
+];
+let PALETTE = THEMES[0];
+const boom = ['#ff3833','#ff8c33','#ffd633','#ffffff'];
+
+// ════════════════════════ WEAPONS ════════════════════════
+// effect: normal | air | heavy | drill | napalm | bouncer | roller
+// mass: light|medium|heavy  ·  organic: banană (putrezește pe arșiță)  ·  metal: imun la grindină/arșiță
+const WEAPONS = [
+  { id:0,  name:'Banană',     icon:'🍌', rank:0,  color:'#ffe048', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'normal', crater:22, kill:28, desc:'Clasica. Echilibrată — vântul o împinge normal.' },
+  { id:1,  name:'MIRV Triplă',icon:'🔱', rank:1,  color:'#ffd84a', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:3, childCrater:16, childKill:24, desc:'Se desparte în 3 la apex. Acoperire largă.' },
+  { id:2,  name:'Bilă Grea',  icon:'🎳', rank:2,  color:'#cfcfcf', round:true,  size:1.3, wind:0.0, grav:1.35,spd:0.95,mass:'heavy', metal:true,    effect:'heavy', crater:34, kill:40, desc:'IMUNĂ la vânt și vreme. Cade greu, crater mare.' },
+  { id:3,  name:'Cluster',    icon:'💥', rank:3,  color:'#ffcf33', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:5, childCrater:12, childKill:18, desc:'5 fragmente la apex. Ploaie de explozii mici.' },
+  { id:4,  name:'Banană Mare',icon:'🟡', rank:4,  color:'#ffe048', round:false, size:1.8, wind:1.0, grav:1.1, spd:0.9, mass:'light', organic:true,  effect:'normal', crater:50, kill:60, desc:'Lentă dar devastatoare. Crater uriaș.' },
+  { id:5,  name:'Burghiu',    icon:'⚙️', rank:5,  color:'#8fd0ff', round:true,  size:0.9, wind:0.7, grav:1.0, spd:1.05,mass:'heavy', metal:true,    effect:'drill', drill:75, crater:40, kill:44, desc:'Sapă prin clădiri înainte să explodeze adânc.' },
+  { id:6,  name:'Napalm',     icon:'🔥', rank:6,  color:'#ff5522', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'medium', fire:true,    effect:'napalm', crater:16, kill:34, desc:'Împrăștie foc pe orizontală. Grindina îl stinge.' },
+  { id:7,  name:'Săltăreață', icon:'🟢', rank:7,  color:'#33ff99', round:true,  size:1.0, wind:0.9, grav:1.0, spd:1.0, mass:'medium', effect:'bouncer', bounces:3, crater:18, kill:26, desc:'Ricoșează de 3 ori înainte să explodeze.' },
+  { id:8,  name:'Dinamită',   icon:'🧨', rank:8,  color:'#ff3344', round:true,  size:1.0, wind:0.8, grav:1.0, spd:1.0, mass:'medium', effect:'roller', roll:90, crater:30, kill:34, desc:'Se rostogolește pe orizontală, apoi sare în aer.' },
+  { id:9,  name:'Sniper',     icon:'🎯', rank:9,  color:'#ffffff', round:false, size:0.8, wind:0.3, grav:0.8, spd:1.45,mass:'light', metal:true,    effect:'normal', crater:12, kill:20, desc:'Rapidă, plată, metal. Ignoră vânt și vreme — skill pur.' },
+  { id:10, name:'Grindină',   icon:'🌨️', rank:10, color:'#cfeeff', round:false, size:0.9, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:8, childCrater:9, childKill:14, desc:'8 schije la apex. Saturație totală.' },
+  { id:11, name:'NUKE',       icon:'☢️', rank:12, color:'#ffee55', round:true,  size:2.2, wind:1.0, grav:1.0, spd:0.85,mass:'heavy', metal:true,    effect:'normal', crater:90, kill:95, desc:'Sfârșitul lumii. Atenție la propriul recul.' },
+];
+
+// ════════════════════════ WEATHER (strat strategic — predictibil) ════════════════════════
+// Efectele sunt DETERMINISTE și se reflectă în preview-ul de traseu. Legate de temă pentru coerență vizuală.
+const HEAT_ROT_DIST = 640;   // distanță de zbor după care o banană putrezește pe arșiță
+const HAIL_GRAV = 1.7;       // multiplicator de gravitație pe proiectile ușoare în grindină
+const WEATHERS = [
+  { id:'calm', name:'Senin',         icon:'🌤️', windMax:7,  theme:'Apus',      effect:'Fără efecte — orice armă merge.' },
+  { id:'wind', name:'Vânt puternic', icon:'💨', windMax:14, theme:'Furtună',   effect:'Vântul deviază mult proiectilele ușoare. Cele grele și Sniper rezistă.' },
+  { id:'hail', name:'Grindină',      icon:'🌨️', windMax:8,  theme:'Noapte',    effect:'Grindina apasă proiectilele ușoare → cad mai scurt. Folosește arme grele/metal.' },
+  { id:'heat', name:'Arșiță',        icon:'☀️', windMax:5,  theme:'Zi senină', effect:'Bananele se înnegresc și putrezesc pe distanțe lungi. Folosește metal/Sniper.' },
+];
+function themeByName(n) { return THEMES.find(t => t.name === n) || THEMES[0]; }
+// e proiectilul afectat de grindină / arșiță?
+function hitByHail(w) { return state.weather && state.weather.id === 'hail' && w.mass === 'light' && !w.metal; }
+function rotsInHeat(w) { return state.weather && state.weather.id === 'heat' && w.organic && !w.metal; }
+
+// ════════════════════════ PROGRESSION (localStorage) ════════════════════════
+const PROFILE_KEY = 'gorillas_profile_v1';
+let profile = loadProfile();
+function loadProfile() {
+  try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY)); if (p && typeof p.xp === 'number') return p; } catch (e) {}
+  return { xp: 0 };
+}
+function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {} }
+// cumulative XP needed to REACH rank r:  T(r)=100r+20r(r-1)
+function xpForRank(r) { return 100 * r + 20 * r * (r - 1); }
+function rankFromXp(xp) { let r = 0; while (xp >= xpForRank(r + 1)) r++; return r; }
+function currentRank() { return rankFromXp(profile.xp); }
+// Feedback unanim adolescenți: deblocarea armelor la rank ucide descoperirea — toate disponibile în meci.
+// Rangul/XP rămân ca progres de prestigiu (viitor: skins/cosmetice).
+function isUnlocked(w) { return true; }
+function awardXp(n) {
+  const before = currentRank();
+  profile.xp += n;
+  const after = currentRank();
+  saveProfile();
+  if (after > before) {
+    const newly = WEAPONS.filter(w => w.rank > before && w.rank <= after);
+    if (newly.length) showToast('🔓 Deblocat: ' + newly.map(w => w.icon + ' ' + w.name).join(', '), 220);
+    else showToast('⬆️ Rank ' + after + '!', 150);
+  }
+  refreshProgressUI();
+  renderWeaponBar();
+}
+
+let selectedWeaponId = 0;
+
+// ════════════════════════ STATE ════════════════════════
+let state = null;
+let scores = [0, 0];
+// mod de joc (persistă între runde): botPlayer = indexul controlat de bot (1) sau -1 = 2 jucători
+let botPlayer = -1;
+let botDiff = 'mediu';
+let botTimer = null;
+let botFiring = false;     // true doar când botul trage (lasă fire() să treacă în tura lui)
+let humanWeaponId = 0;     // arma aleasă de om, restaurată după ce botul își alege alta
+const MATCH_TARGET = 5;    // best-of: primul la 5 câștigă MECIUL
+let aim = null;            // drag-to-aim: {x,y} pointer în coordonate canvas, sau null
+
+function genSkyline() {
+  const buildings = [];
+  const groundY = H - 20;
+  let x = 0;
+  while (x < W) {
+    let w = randInt(70, 115);
+    if (x + w > W) w = W - x;
+    if (w < 40) { if (buildings.length) buildings[buildings.length - 1].w += w; break; }
+    const h = randInt(130, 350);
+    const y = groundY - h;
+    const color = PALETTE.buildings[randInt(0, PALETTE.buildings.length - 1)];
+    const windows = [];
+    const winW = 9, winH = 11, gx = 6, gy = 7;
+    for (let wy = y + 18; wy < groundY - 18; wy += winH + gy) {
+      for (let wx = x + 9; wx < x + w - 14; wx += winW + gx) {
+        windows.push({ x: wx, y: wy, lit: Math.random() < 0.5 });
+      }
+    }
+    buildings.push({ x, y, w, h, color, windows });
+    x += w;
+  }
+  return buildings;
+}
+
+function applyTheme(t) {
+  PALETTE = t;
+  canvas.style.background = t.sky;
+}
+
+function init(keepScores) {
+  if (!keepScores) scores = [0, 0];
+  const weather = WEATHERS[randInt(0, WEATHERS.length - 1)];
+  applyTheme(themeByName(weather.theme)); // tema urmează vremea = varietate + coerență
+  const buildings = genSkyline();
+  const b1 = buildings[1] || buildings[0];
+  const b2 = buildings[buildings.length - 2] || buildings[buildings.length - 1];
+  state = {
+    buildings,
+    craters: [],
+    gorillas: [
+      { x: b1.x + b1.w / 2, y: b1.y - 24, alive: true },
+      { x: b2.x + b2.w / 2, y: b2.y - 24, alive: true },
+    ],
+    turn: Math.random() < 0.5 ? 0 : 1,
+    weather,
+    wind: rand(-weather.windMax, weather.windMax),
+    shots: [],
+    volleyActive: false,
+    volleyResolved: false,
+    particles: [],
+    fires: [],
+    hail: [],
+    roundOver: false,
+    overTimer: 0,
+    overMsg: '',
+    lastLanding: null,
+    trail: [],
+    toast: null,
+    shake: 0, flash: 0, freeze: 0, slowmo: 0, frame: 0,
+    turnsThisRound: 0,
+    matchOver: false,
+  };
+  aim = null;
+  if (weather.id === 'hail') for (let i = 0; i < 80; i++) state.hail.push({ x: rand(0, W), y: rand(0, H), s: rand(7, 11) });
+  if (botPlayer >= 0 && state.turn !== botPlayer) selectedWeaponId = humanWeaponId;
+  updateUI();
+  renderWeaponBar(); // reflectă slăbiciunile pe vremea curentă
+  updateHint();
+  maybeBotTurn(); // dacă runda începe cu tura botului
+}
+
+function updateUI() {
+  const t = state.turn;
+  const tl = document.getElementById('turnLabel');
+  tl.textContent = `Jucător ${t + 1}  |  ${scores[0]} : ${scores[1]}`;
+  tl.style.color = t === 0 ? '#6cf' : '#f96';
+  const w = state.wind;
+  const arrow = w > 0 ? '→' : '←';
+  const wx = state.weather;
+  document.getElementById('status').innerHTML =
+    `Vânt: <b>${arrow}</b> ${Math.abs(w).toFixed(1)} &nbsp;·&nbsp; <b style="color:#7fd0ff">${wx.icon} ${wx.name}</b> — <span style="color:#cbb8e0">${wx.effect}</span>`;
+}
+
+function showToast(msg, t) { if (state) state.toast = { msg, t }; }
+
+// ════════════════════════ FIRING ════════════════════════
+function makeShot(x, y, vx, vy, weapon) {
+  return { x, y, vx, vy, rot: 0, age: 0, weapon,
+    bounces: weapon.bounces || 0, drilling: false, drillDepth: 0,
+    rolling: false, rollLeft: 0, split: false, resolved: false };
+}
+
+function fire() {
+  if (state.volleyActive || state.roundOver) return;
+  if (botPlayer >= 0 && state.turn === botPlayer && !botFiring) return; // omul nu poate trage în tura botului
+  const angle = parseFloat(document.getElementById('angle').value);
+  const velocity = parseFloat(document.getElementById('velocity').value);
+  if (isNaN(angle) || isNaN(velocity) || velocity <= 0) return;
+  const g = state.gorillas[state.turn];
+  if (!g.alive) return;
+  const wpn = WEAPONS[selectedWeaponId];
+  const dir = state.turn === 0 ? 1 : -1;
+  const rad = angle * Math.PI / 180;
+  const speed = clamp(velocity, 8, 200) * 0.42 * wpn.spd;
+  state.trail = [];
+  state.shots = [ makeShot(g.x + dir * 16, g.y - 16, dir * speed * Math.cos(rad), -speed * Math.sin(rad), wpn) ];
+  state.volleyActive = true;
+  state.volleyResolved = false;
+  sfxThrow();
+  awardXp(4); // engagement XP la fiecare tragere
+}
+
+function addCrater(x, y, r) { if (x > -r && x < W + r) state.craters.push({ x, y, r }); }
+
+function explode(x, y, n, big) {
+  const baseS = big ? 5.5 : 3;
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const s = rand(1, baseS);
+    state.particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: 1, color: boom[randInt(0, 3)] });
+  }
+}
+
+function addFire(x, y) {
+  state.fires.push({ x, y, life: 1 + Math.random() * 0.6 });
+}
+
+// splash kill: oricine în raza KR de la centru moare
+function splashKill(x, y, KR) {
+  const dead = [];
+  for (let i = 0; i < state.gorillas.length; i++) {
+    const g = state.gorillas[i];
+    if (!g.alive) continue;
+    const dx = x - g.x, dy = y - (g.y - 6);
+    if (dx * dx + dy * dy <= KR * KR) dead.push(i);
+  }
+  return dead;
+}
+
+// detonează o lovitură la (x,y) — craters + particule + splash. Setează lastLanding. Returnează lista de gorile ucise.
+function detonate(shot, x, y) {
+  const w = shot.weapon;
+  const nuke = w.size > 2;
+  let killed = [];
+  if (w.effect === 'napalm') {
+    for (let o = -2; o <= 2; o++) {
+      const fx = x + o * 20;
+      addCrater(fx, y, w.crater);
+      explode(fx, y, 14, false);
+      for (let f = 0; f < 3; f++) addFire(fx + rand(-10, 10), y - rand(0, 8));
+    }
+    killed = splashKill(x, y, w.kill);
+    explode(x, y, 30, true);
+  } else {
+    addCrater(x, y, w.crater);
+    explode(x, y, nuke ? 90 : 50, true);
+    killed = splashKill(x, y, w.kill);
+  }
+  // ── JUICE: screen shake + flash (scalat cu raza craterului, cap 8px) ──
+  state.shake = Math.min(8, nuke ? 8 : w.crater * 0.13);
+  state.flash = nuke ? 1 : 0.5;
+  sfxBoom(true, nuke);
+  if (killed.length) {
+    for (const i of killed) state.gorillas[i].alive = false;
+    state.lastLanding = { x, y, t: 90, kind: 'kill' };
+    state.freeze = 6;    // hit-stop ~100ms exact la kill
+    state.slowmo = 42;   // slow-mo după hit-stop → momentul clipabil
+    state.shake = 8;
+  } else {
+    state.lastLanding = { x, y, t: 80, kind: 'impact' };
+  }
+  return killed;
+}
+
+function inAnyCrater(x, y) {
+  for (const c of state.craters) { const dx = x - c.x, dy = y - c.y; if (dx * dx + dy * dy <= c.r * c.r) return true; }
+  return false;
+}
+function inBuilding(x, y) {
+  if (y >= H - 20) return true;
+  for (const b of state.buildings) if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) return true;
+  return false;
+}
+function gorillaHit(x, y) {
+  for (let i = 0; i < state.gorillas.length; i++) {
+    const g = state.gorillas[i];
+    if (!g.alive) continue;
+    if (x >= g.x - 18 && x <= g.x + 18 && y >= g.y - 26 && y <= g.y + 22) return i;
+  }
+  return -1;
+}
+
+// ════════════════════════ TRAJECTORY PREVIEW ════════════════════════
+function computeTrajectory() {
+  const angle = parseFloat(document.getElementById('angle').value);
+  const velocity = parseFloat(document.getElementById('velocity').value);
+  if (isNaN(angle) || isNaN(velocity) || velocity <= 0) return null;
+  const g = state.gorillas[state.turn];
+  if (!g || !g.alive) return null;
+  const wpn = WEAPONS[selectedWeaponId];
+  const dir = state.turn === 0 ? 1 : -1;
+  const rad = angle * Math.PI / 180;
+  const speed = clamp(velocity, 8, 200) * 0.42 * wpn.spd;
+  let x = g.x + dir * 16, y = g.y - 16;
+  let vx = dir * speed * Math.cos(rad), vy = -speed * Math.sin(rad);
+  // ACELEAȘI efecte de vreme ca în stepShot → preview-ul nu minte
+  const gravF = wpn.grav * (hitByHail(wpn) ? HAIL_GRAV : 1);
+  const rot = rotsInHeat(wpn);
+  let dist = 0;
+  const pts = [{ x, y }];
+  let landing = null;
+  for (let i = 0; i < 1400; i++) {
+    vx += state.wind * 0.018 * wpn.wind;
+    vy += 0.18 * gravF;
+    const dx = vx * 0.5, dy = vy * 0.5;
+    x += dx; y += dy;
+    pts.push({ x, y });
+    if (rot) { dist += Math.hypot(dx, dy); if (dist >= HEAT_ROT_DIST) { landing = { x, y, kind: 'rot' }; break; } }
+    const inFrameX = x >= 0 && x <= W;
+    if (i > 5 && inFrameX) { const hit = gorillaHit(x, y); if (hit !== -1) { landing = { x, y, kind: hit === state.turn ? 'self' : 'enemy' }; break; } }
+    if (y >= H - 20) { landing = { x, y: H - 20, kind: 'ground' }; break; }
+    if (inFrameX && i > 5 && inBuilding(x, y) && !inAnyCrater(x, y)) { landing = { x, y, kind: wpn.effect === 'air' ? 'air' : 'building' }; break; }
+    if (x < -W * 3 || x > W * 4 || y > H + W * 2) { landing = { x, y, kind: 'lost' }; break; }
+  }
+  return { pts, landing, splits: wpn.effect === 'air' };
+}
+
+// ════════════════════════ STEP ════════════════════════
+function endRound() {
+  state.shots = [];
+  state.volleyActive = false;
+  state.volleyResolved = true;
+  const alive = [];
+  for (let i = 0; i < state.gorillas.length; i++) if (state.gorillas[i].alive) alive.push(i);
+  if (alive.length === 1) {
+    const winner = alive[0];
+    scores[winner]++;
+    const who = (botPlayer === winner) ? 'Bot' : `Jucător ${winner + 1}`;
+    if (scores[winner] >= MATCH_TARGET) {        // best-of: meci câștigat
+      state.matchOver = true;
+      state.overMsg = `🏆 ${who} câștigă MECIUL ${scores[0]}–${scores[1]}!`;
+    } else {
+      state.overMsg = `${who} câștigă runda  (${scores[0]}–${scores[1]})`;
+    }
+    awardXp(50 + 25); // kill + win
+    sfxWin();
+  } else {
+    state.overMsg = 'Egalitate — amândoi căzuți!';
+    awardXp(20);
+  }
+  state.roundOver = true;
+  state.overTimer = 0;
+  updateUI();
+}
+
+function stepShot(shot) {
+  const w = shot.weapon;
+  shot.age++;
+
+  // ── rolling (Dinamită) ──
+  if (shot.rolling) {
+    shot.x += shot.vx * 0.5;
+    shot.rollLeft -= Math.abs(shot.vx * 0.5);
+    shot.rot += 0.3;
+    state.trail.push({ x: shot.x, y: shot.y, age: 0, color: w.color });
+    if (shot.rollLeft <= 0 || shot.x < 0 || shot.x > W) {
+      const k = detonate(shot, shot.x, shot.y); if (k.length) endRound();
+      return { survive: false, children: [] };
+    }
+    return { survive: true, children: [] };
+  }
+
+  // ── drilling (Burghiu) ──
+  if (shot.drilling) {
+    shot.vy += 0.18 * w.grav;
+    shot.x += shot.vx * 0.5; shot.y += shot.vy * 0.5;
+    shot.drillDepth += Math.abs(shot.vy * 0.5);
+    addCrater(shot.x, shot.y, 11);
+    if (shot.age % 2 === 0) explode(shot.x, shot.y, 4, false);
+    state.trail.push({ x: shot.x, y: shot.y, age: 0, color: w.color });
+    if (shot.drillDepth >= w.drill || shot.y >= H - 20) {
+      const k = detonate(shot, shot.x, Math.min(shot.y, H - 20)); if (k.length) endRound();
+      return { survive: false, children: [] };
+    }
+    return { survive: true, children: [] };
+  }
+
+  // ── normal flight (cu efecte de vreme, DETERMINISTE) ──
+  const gravF = w.grav * (hitByHail(w) ? HAIL_GRAV : 1);   // grindina apasă proiectilele ușoare → cad mai scurt
+  shot.vx += state.wind * 0.018 * w.wind;                  // vântul (mare pe 'wind') deviază după factorul armei
+  shot.vy += 0.18 * gravF;
+  const dx0 = shot.vx * 0.5, dy0 = shot.vy * 0.5;
+  shot.x += dx0; shot.y += dy0;
+  shot.rot += w.round ? 0.18 : 0.22;
+  // arșiță: banana se gătește pe distanță → se înnegrește și putrezește (cade fără explozie)
+  if (rotsInHeat(w)) {
+    shot.dist = (shot.dist || 0) + Math.hypot(dx0, dy0);
+    shot.cook = Math.min(1, shot.dist / HEAT_ROT_DIST);
+    if (shot.dist >= HEAT_ROT_DIST) {
+      explode(shot.x, shot.y, 10, false); // pufnet maro slab, fără crater
+      sfxRot();
+      state.lastLanding = { x: shot.x, y: shot.y, t: 70, kind: 'rot' };
+      return { survive: false, children: [] };
+    }
+  }
+  state.trail.push({ x: shot.x, y: shot.y, age: 0, color: w.color });
+
+  const inFrameX = shot.x >= 0 && shot.x <= W;
+
+  // air-split (MIRV / Cluster / Grindină) — la apex (vy trece prin 0)
+  if (w.effect === 'air' && !shot.split && shot.vy >= 0 && shot.age > 8) {
+    shot.split = true;
+    const child = { id: -1, name: 'frag', color: w.color, round: false, size: 0.7,
+      wind: w.wind, grav: w.grav, spd: 1, effect: 'normal', crater: w.childCrater, kill: w.childKill };
+    const kids = [];
+    for (let j = 0; j < w.splitN; j++) {
+      const spread = (j - (w.splitN - 1) / 2) * 1.4;
+      const c = makeShot(shot.x, shot.y, shot.vx + spread, shot.vy - rand(0.5, 1.5), child);
+      c.split = true; // copiii nu se mai despart
+      kids.push(c);
+    }
+    explode(shot.x, shot.y, 16, false);
+    return { survive: false, children: kids };
+  }
+
+  // gorilla direct hit
+  if (inFrameX && shot.age > 5) {
+    const hit = gorillaHit(shot.x, shot.y);
+    if (hit !== -1) { const k = detonate(shot, shot.x, shot.y); if (k.length) endRound(); return { survive: false, children: [] }; }
+  }
+
+  // ground
+  if (shot.y >= H - 20) {
+    if (w.effect === 'roller') { shot.rolling = true; shot.vy = 0; shot.vx = (shot.vx >= 0 ? 1 : -1) * 4.5; shot.rollLeft = w.roll; shot.y = H - 22; return { survive: true, children: [] }; }
+    const k = detonate(shot, shot.x, H - 20); if (k.length) endRound();
+    return { survive: false, children: [] };
+  }
+
+  // building
+  if (inFrameX && shot.age > 5 && inBuilding(shot.x, shot.y) && !inAnyCrater(shot.x, shot.y)) {
+    if (w.effect === 'drill') { shot.drilling = true; shot.vx *= 0.15; addCrater(shot.x, shot.y, 11); return { survive: true, children: [] }; }
+    if (w.effect === 'roller') { shot.rolling = true; shot.vy = 0; shot.vx = (shot.vx >= 0 ? 1 : -1) * 4.5; shot.rollLeft = w.roll; shot.y -= 6; return { survive: true, children: [] }; }
+    if (w.effect === 'bouncer' && shot.bounces > 0) {
+      shot.bounces--; shot.vy = -Math.abs(shot.vy) * 0.62; shot.vx *= 0.82; shot.y -= 6;
+      addCrater(shot.x, shot.y, 10); explode(shot.x, shot.y, 8, false); sfxBounce();
+      return { survive: true, children: [] };
+    }
+    const k = detonate(shot, shot.x, shot.y); if (k.length) endRound();
+    return { survive: false, children: [] };
+  }
+
+  // lost in the void
+  if (shot.age > 1500 || shot.x < -W * 3 || shot.x > W * 4 || shot.y > H + W * 2) {
+    state.lastLanding = { x: shot.x, y: shot.y, t: 60, kind: 'lost' };
+    return { survive: false, children: [] };
+  }
+  return { survive: true, children: [] };
+}
+
+function step() {
+  state.frame++;
+  // HIT-STOP: îngheață tot ~100ms exact la kill (punch)
+  if (state.freeze > 0) { state.freeze--; return; }
+  // SLOW-MO pe kill: sare jumătate din frame-uri → totul la 1/2 viteză (momentul clipabil). NU blochează input.
+  if (state.slowmo > 0) { state.slowmo--; if (state.frame % 2 === 0) return; }
+  // decay juice (shake cap deja la 8 în detonate)
+  state.shake = Math.max(0, state.shake - 0.6);
+  state.flash = Math.max(0, state.flash - 0.04);
+  // particles
+  for (const p of state.particles) { p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life -= 0.022; }
+  state.particles = state.particles.filter(p => p.life > 0);
+  // fires
+  for (const f of state.fires) f.life -= 0.012;
+  state.fires = state.fires.filter(f => f.life > 0);
+  // hail ambient (cade diagonal cu vântul; reciclat sus)
+  if (state.hail && state.hail.length) {
+    const wx = state.wind * 0.5;
+    for (const h of state.hail) { h.y += h.s; h.x -= wx; if (h.y > H) { h.y = -5; h.x = rand(0, W); } if (h.x < 0) h.x += W; if (h.x > W) h.x -= W; }
+  }
+  // trail aging
+  for (const t of state.trail) t.age++;
+  state.trail = state.trail.filter(t => t.age < 120);
+  // landing marker
+  if (state.lastLanding) { state.lastLanding.t--; if (state.lastLanding.t <= 0) state.lastLanding = null; }
+  // toast
+  if (state.toast) { state.toast.t--; if (state.toast.t <= 0) state.toast = null; }
+
+  // round-over countdown
+  if (state.roundOver) {
+    state.overTimer++;
+    if (state.overTimer % 6 === 0) {
+      const win = state.gorillas.find(g => g.alive);
+      if (win) {
+        const colors = ['#ffd700','#ff8833','#ff3366','#33ff88','#33aaff','#ff66ff'];
+        for (let i = 0; i < 4; i++) state.particles.push({ x: win.x + rand(-22, 22), y: win.y - 30 + rand(-12, 6), vx: rand(-2, 2), vy: rand(-3.5, -1), life: 1, color: colors[randInt(0, colors.length - 1)] });
+      }
+    }
+    if (state.overTimer > (state.matchOver ? 260 : 180)) init(state.matchOver ? false : true);
+    return;
+  }
+
+  // shots — cu time-warp: când TOATE loviturile sunt în afara cadrului (invizibile),
+  // accelerăm fizica de 8× ca să nu pară blocat ~15s la o lovitură care zboară mult deasupra ecranului.
+  // Traiectoria rămâne identică; doar derulăm rapid partea invizibilă. La reintrare → viteză normală.
+  if (state.volleyActive && state.shots.length) {
+    const onScreen = () => state.shots.some(s => s.x >= 0 && s.x <= W && s.y >= 0 && s.y <= H);
+    const passes = onScreen() ? 1 : 8;
+    for (let p = 0; p < passes; p++) {
+      if (state.roundOver || !state.shots.length) break;
+      const next = [];
+      for (const shot of state.shots) {
+        if (state.roundOver) break;
+        const r = stepShot(shot);
+        if (r.survive) next.push(shot);
+        if (r.children && r.children.length) for (const c of r.children) next.push(c);
+      }
+      if (state.roundOver) break;
+      state.shots = next;
+      if (state.shots.length === 0) { state.volleyActive = false; nextTurn(); break; }
+      if (onScreen()) break; // a reintrat în cadru — oprim fast-forward-ul, continuăm la 1× din frame-ul următor
+    }
+  }
+}
+
+function nextTurn() {
+  // plasă anti-stall: rundă prea lungă (ex: ambii ratează pe vreme grea) → egalitate, rundă nouă (vreme nouă)
+  state.turnsThisRound++;
+  if (state.turnsThisRound > 60) {
+    state.overMsg = 'Egalitate — rundă prea lungă!';
+    state.roundOver = true; state.overTimer = 0;
+    awardXp(10); updateUI();
+    return;
+  }
+  state.turn = 1 - state.turn;
+  state.wind = rand(-state.weather.windMax, state.weather.windMax);
+  if (botPlayer >= 0 && state.turn !== botPlayer) { selectedWeaponId = humanWeaponId; renderWeaponBar(); updateHint(); }
+  updateUI();
+  maybeBotTurn();
+}
+
+// ════════════════════════ BOT AI (single-player) ════════════════════════
+// Reutilizează computeTrajectory() (fizica exactă). Caută unghi+viteză care lovesc; dificultatea = zgomot gaussian.
+function botThink() {
+  const meIdx = botPlayer, foeIdx = 1 - botPlayer;
+  const foe = state.gorillas[foeIdx];
+  const savedAngle = document.getElementById('angle').value;
+  const savedVel = document.getElementById('velocity').value;
+  let best = null;
+  for (let a = 12; a <= 86; a += 3) {
+    for (let v = 28; v <= 150; v += 5) {
+      document.getElementById('angle').value = a;
+      document.getElementById('velocity').value = v;
+      const t = computeTrajectory();
+      if (!t || !t.landing) continue;
+      let score = Math.abs(t.landing.x - foe.x) + Math.abs(t.landing.y - foe.y) * 0.4;
+      if (t.landing.kind === 'enemy') score -= 99999;
+      if (t.landing.kind === 'self') score += 99999;
+      if (t.landing.kind === 'rot' || t.landing.kind === 'lost') score += 400;
+      if (!best || score < best.score) best = { a, v, score };
+    }
+  }
+  document.getElementById('angle').value = savedAngle;
+  document.getElementById('velocity').value = savedVel;
+  return best;
+}
+
+function botPickWeapon() {
+  // Botul nu folosește niciodată o armă sinucigașă pe vremea curentă (altfel pe Arșiță banana putrezește
+  // și nu ajunge la inamic → stall). Ușurința vine din ZGOMOTUL de țintire, nu din arme proaste.
+  if (botDiff === 'greu') {
+    const good = WEAPONS.filter(w => !weaponWeatherStatus(w).bad);
+    selectedWeaponId = (good.length ? good[randInt(0, good.length - 1)] : WEAPONS[2]).id;
+  } else {
+    // ușor/mediu: banană dacă e ok; altfel Bilă Grea (metal — imună la vânt/grindină/arșiță)
+    selectedWeaponId = weaponWeatherStatus(WEAPONS[0]).bad ? 2 : 0;
+  }
+  renderWeaponBar(); updateHint();
+}
+
+function maybeBotTurn() {
+  if (botPlayer < 0 || state.roundOver) return;
+  if (state.turn !== botPlayer) return;
+  botPickWeapon();
+  const best = botThink();
+  if (!best) return;
+  const noise = botDiff === 'usor' ? { a: 9, v: 18 } : (botDiff === 'mediu' ? { a: 4, v: 8 } : { a: 1.2, v: 2.5 });
+  const a = clamp(best.a + rand(-noise.a, noise.a), 0, 90);
+  const v = clamp(best.v + rand(-noise.v, noise.v), 10, 200);
+  if (botTimer) clearTimeout(botTimer);
+  botTimer = setTimeout(() => {
+    if (!state || state.turn !== botPlayer || state.roundOver || state.volleyActive) return;
+    document.getElementById('angle').value = Math.round(a);
+    document.getElementById('velocity').value = Math.round(v);
+    botFiring = true; fire(); botFiring = false;
+  }, rand(700, 1500)); // pauză de „gândire"
+}
+
+// ════════════════════════ RENDER ════════════════════════
+function drawOrb() {
+  if (PALETTE.orb === 'none') return;
+  const cx = W * 0.78, cy = 78, r = PALETTE.orb === 'moon' ? 30 : 38;
+  const col = PALETTE.orbColor;
+  const grad = ctx.createRadialGradient(cx, cy, 6, cx, cy, r * 2);
+  grad.addColorStop(0, `rgba(${col},0.95)`);
+  grad.addColorStop(0.4, `rgba(${col},0.45)`);
+  grad.addColorStop(1, `rgba(${col},0)`);
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.arc(cx, cy, r * 2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = `rgba(${col},0.9)`;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  if (PALETTE.orb === 'moon') { // crescent: scoate o mușcătură
+    ctx.fillStyle = PALETTE.sky.includes('#06070f') ? '#0d1230' : '#1a2350';
+    ctx.beginPath(); ctx.arc(cx + 11, cy - 5, r, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+const skylineOff = document.createElement('canvas');
+skylineOff.width = W; skylineOff.height = H;
+const sctx = skylineOff.getContext('2d');
+function drawSkyline() {
+  sctx.clearRect(0, 0, W, H);
+  sctx.fillStyle = PALETTE.ground;
+  sctx.fillRect(0, H - 20, W, 20);
+  for (const b of state.buildings) {
+    sctx.fillStyle = b.color;
+    sctx.fillRect(b.x, b.y, b.w, b.h);
+    sctx.fillStyle = 'rgba(255,255,255,0.06)';
+    sctx.fillRect(b.x, b.y, b.w, 2);
+    for (const win of b.windows) { sctx.fillStyle = win.lit ? PALETTE.windowOn : PALETTE.windowOff; sctx.fillRect(win.x, win.y, 9, 11); }
+  }
+  sctx.save();
+  sctx.globalCompositeOperation = 'destination-out';
+  for (const c of state.craters) { sctx.beginPath(); sctx.arc(c.x, c.y, c.r, 0, Math.PI * 2); sctx.fill(); }
+  sctx.restore();
+}
+
+function drawGorilla(g, idx) {
+  if (!g.alive) return;
+  const isWinner = state.roundOver && g.alive;
+  let yOff = 0, lUp = 0, rUp = 0;
+  if (isWinner) { const t = state.overTimer * 0.25, ph = Math.sin(t); lUp = Math.max(0, ph); rUp = Math.max(0, -ph); yOff = -Math.abs(Math.sin(t)) * 12; }
+  const x = g.x, y = g.y + yOff;
+  ctx.fillStyle = '#3a2418';
+  ctx.beginPath(); ctx.ellipse(x, y - 2, 13, 14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x, y - 20, 11, 12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#221208';
+  ctx.beginPath(); ctx.ellipse(x - 14, y - 1 - lUp * 28, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + 14, y - 1 - rUp * 28, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x - 7, y + 14, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + 7, y + 14, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#4a3022';
+  ctx.beginPath(); ctx.ellipse(x, y - 17, 7, 8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.fillRect(x - 4, y - 20, 2, 2); ctx.fillRect(x + 2, y - 20, 2, 2);
+  ctx.fillStyle = '#000'; ctx.fillRect(x - 3, y - 20, 1, 1); ctx.fillRect(x + 3, y - 20, 1, 1);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - 3, y - 14); ctx.lineTo(x + 3, y - 14); ctx.stroke();
+  ctx.fillStyle = 'rgba(180,140,100,0.25)'; ctx.fillRect(x - 6, y - 6, 12, 6);
+  if (idx === state.turn && !state.volleyActive && !state.roundOver) {
+    ctx.strokeStyle = '#ffd700'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
+    ctx.strokeRect(x - 20, y - 30, 40, 56); ctx.setLineDash([]);
+    ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.moveTo(x, y - 36); ctx.lineTo(x - 5, y - 44); ctx.lineTo(x + 5, y - 44); ctx.closePath(); ctx.fill();
+  }
+}
+
+let previewMode = 1;
+let previewReveal = 0;          // câte puncte din traseu sunt dezvăluite (animație de trasare)
+let previewSig = '';            // semnătura parametrilor; la schimbare → re-trasează de la zero
+const REVEAL_STEP = 6;          // puncte adăugate / frame (~2 dots, fiindcă desenăm din 3 în 3)
+function drawTrajectoryPreview() {
+  if (state.volleyActive || state.roundOver) return;
+  const full = aim != null || previewMode === 2; // cât tragi cu degetul → preview COMPLET
+  if (!full && previewMode === 0) return;
+  const traj = computeTrajectory();
+  if (!traj) return;
+  const pts = traj.pts;
+  const shortMode = !full && previewMode === 1;
+  let limit = shortMode ? Math.min(pts.length, Math.floor(pts.length * 0.18) + 8) : pts.length;
+
+  // Trasare GRADUALĂ: doar în preview Complet idle (nu cât tragi cu degetul — atunci vrei feedback instant).
+  const animate = full && !aim;
+  const sig = [document.getElementById('angle').value, document.getElementById('velocity').value,
+    selectedWeaponId, Math.round(state.wind * 10), state.turn, previewMode].join('|');
+  if (animate) {
+    if (sig !== previewSig) { previewSig = sig; previewReveal = 0; }     // parametrii s-au schimbat → reia
+    else previewReveal = Math.min(limit, previewReveal + REVEAL_STEP);   // crește treptat
+  } else { previewSig = sig; previewReveal = limit; }                    // instant (drag sau mod scurt)
+  const drawn = Math.min(limit, previewReveal);
+  const complete = drawn >= limit;
+
+  ctx.save();
+  for (let i = 0; i < drawn; i += 3) {
+    const p = pts[i], frac = i / Math.max(1, pts.length);
+    ctx.globalAlpha = shortMode ? Math.max(0.12, 0.75 - (i / limit) * 0.6) : Math.max(0.18, 0.6 - frac * 0.35);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  if (full && complete && traj.landing) {
+    const l = traj.landing;
+    const color = l.kind === 'enemy' ? '#33ff66' : (l.kind === 'self' ? '#ff4444' : (l.kind === 'air' ? '#ffcf33' : (l.kind === 'rot' ? '#8a5a2a' : '#ffffff')));
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(l.x, l.y, 9, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(l.x - 13, l.y); ctx.lineTo(l.x + 13, l.y); ctx.moveTo(l.x, l.y - 13); ctx.lineTo(l.x, l.y + 13); ctx.stroke();
+    let lbl = traj.splits ? 'se desparte aici' : (l.kind === 'rot' ? '🥀 putrezește aici!' : '');
+    if (lbl) { ctx.fillStyle = color; ctx.font = 'bold 12px Georgia'; ctx.textAlign = 'center'; ctx.fillText(lbl, l.x, l.y - 18); ctx.textAlign = 'start'; }
+  }
+  ctx.restore();
+}
+
+function drawAim() {
+  if (!aim) return;
+  const g = state.gorillas[state.turn]; if (!g || !g.alive) return;
+  const gx = g.x, gy = g.y - 16;
+  // linie elastică gorilă → deget
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+  ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(aim.x, aim.y); ctx.stroke(); ctx.setLineDash([]);
+  // indicator putere (bară pe lângă gorilă)
+  const vel = parseFloat(document.getElementById('velocity').value) || 0;
+  const ang = parseFloat(document.getElementById('angle').value) || 0;
+  const pct = clamp(vel / 200, 0, 1);
+  const col = pct < 0.5 ? '#66ff88' : (pct < 0.8 ? '#ffd633' : '#ff5533');
+  ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(gx - 22, gy - 52, 44, 7);
+  ctx.fillStyle = col; ctx.fillRect(gx - 22, gy - 52, 44 * pct, 7);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 12px Georgia'; ctx.textAlign = 'center';
+  ctx.fillText(Math.round(ang) + '°  ' + Math.round(vel), gx, gy - 58);
+  ctx.textAlign = 'start';
+  ctx.restore();
+}
+
+function drawTrail() {
+  for (const t of state.trail) {
+    const alpha = Math.max(0, 1 - t.age / 100);
+    if (alpha < 0.04) continue;
+    ctx.globalAlpha = alpha * 0.5;
+    ctx.fillStyle = t.color || '#ffe048';
+    ctx.beginPath(); ctx.arc(t.x, t.y, 2.6, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawShot(s) {
+  const w = s.weapon;
+  ctx.save();
+  ctx.translate(s.x, s.y); ctx.rotate(s.rot);
+  ctx.fillStyle = w.color;
+  if (w.round) {
+    const r = 5 * w.size;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.arc(r * 0.3, r * 0.3, r * 0.55, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.ellipse(0, 0, 11 * w.size, 4.5 * w.size, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(-10 * w.size, -1, 2, 2); ctx.fillRect(8 * w.size, -1, 2, 2);
+  }
+  // arșiță: înnegrire progresivă (cook 0..1)
+  if (s.cook) {
+    ctx.fillStyle = `rgba(20,10,0,${s.cook * 0.85})`;
+    if (w.round) { ctx.beginPath(); ctx.arc(0, 0, 5 * w.size, 0, Math.PI * 2); ctx.fill(); }
+    else { ctx.beginPath(); ctx.ellipse(0, 0, 11 * w.size, 4.5 * w.size, 0, 0, Math.PI * 2); ctx.fill(); }
+  }
+  ctx.restore();
+}
+
+function drawHail() {
+  if (!state.hail || !state.hail.length) return;
+  ctx.strokeStyle = 'rgba(210,235,255,0.7)';
+  ctx.lineWidth = 1.5;
+  const wx = state.wind * 0.5;
+  ctx.beginPath();
+  for (const h of state.hail) { ctx.moveTo(h.x, h.y); ctx.lineTo(h.x - wx, h.y - h.s); }
+  ctx.stroke();
+}
+
+function drawFires() {
+  for (const f of state.fires) {
+    const r = 5 + Math.sin(f.life * 12) * 2;
+    ctx.globalAlpha = Math.min(1, f.life);
+    ctx.fillStyle = '#ff8c2a'; ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(f.x, f.y, r * 0.5, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawWindGauge() {
+  const cx = W / 2, cy = 24;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(cx - 90, cy - 9, 180, 18);
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.strokeRect(cx - 90, cy - 9, 180, 18);
+  const mag = Math.min(80, Math.abs(state.wind) * 11), dir = state.wind >= 0 ? 1 : -1;
+  ctx.fillStyle = '#ffd700'; ctx.fillRect(cx, cy - 2, dir * mag, 4);
+  ctx.beginPath(); ctx.moveTo(cx + dir * mag, cy); ctx.lineTo(cx + dir * (mag - 8), cy - 6); ctx.lineTo(cx + dir * (mag - 8), cy + 6); ctx.closePath(); ctx.fill();
+}
+
+function drawParticles() {
+  for (const p of state.particles) { ctx.fillStyle = p.color; const sz = 2 + p.life * 2; ctx.globalAlpha = p.life; ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz); }
+  ctx.globalAlpha = 1;
+}
+
+function drawRoundOverBanner() {
+  if (!state.roundOver) return;
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(W / 2 - 230, H / 2 - 36, 460, 72);
+  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.strokeRect(W / 2 - 230, H / 2 - 36, 460, 72);
+  ctx.fillStyle = '#ffd700'; ctx.font = 'bold 22px Georgia'; ctx.textAlign = 'center';
+  ctx.fillText(state.overMsg, W / 2, H / 2 - 4);
+  ctx.font = '14px Georgia'; ctx.fillStyle = '#fff'; ctx.fillText('Rundă nouă în curând…', W / 2, H / 2 + 22);
+  ctx.textAlign = 'start';
+}
+
+function drawToast() {
+  if (!state.toast) return;
+  const a = Math.min(1, state.toast.t / 30);
+  ctx.globalAlpha = a;
+  ctx.font = 'bold 17px Georgia'; ctx.textAlign = 'center';
+  const tw = ctx.measureText(state.toast.msg).width + 30;
+  ctx.fillStyle = 'rgba(20,8,40,0.9)'; ctx.fillRect(W / 2 - tw / 2, 44, tw, 32);
+  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.5; ctx.strokeRect(W / 2 - tw / 2, 44, tw, 32);
+  ctx.fillStyle = '#ffd700'; ctx.fillText(state.toast.msg, W / 2, 65);
+  ctx.textAlign = 'start'; ctx.globalAlpha = 1;
+}
+
+function drawOffscreenTracker(x, y, kind, age) {
+  if (x >= 0 && x <= W && y >= 0 && y <= H) return;
+  const m = 26, ex = clamp(x, m, W - m), ey = clamp(y, m, H - m);
+  const dx = x - ex, dy = y - ey, a = Math.atan2(dy, dx), dist = Math.round(Math.hypot(dx, dy));
+  ctx.save(); ctx.translate(ex, ey);
+  const alpha = Math.min(1, age / 30); ctx.globalAlpha = alpha;
+  const color = kind === 'kill' ? '#ff3333' : (kind === 'lost' ? '#aaaaaa' : '#ff8833');
+  ctx.strokeStyle = color; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(10, 10); ctx.moveTo(10, -10); ctx.lineTo(-10, 10); ctx.stroke();
+  ctx.lineWidth = 2;
+  const a1 = 14, a2 = 26;
+  ctx.beginPath(); ctx.moveTo(a1 * Math.cos(a), a1 * Math.sin(a)); ctx.lineTo(a2 * Math.cos(a), a2 * Math.sin(a)); ctx.stroke();
+  ctx.fillStyle = color; ctx.beginPath();
+  ctx.moveTo(a2 * Math.cos(a), a2 * Math.sin(a));
+  ctx.lineTo(a2 * Math.cos(a) - 6 * Math.cos(a - 0.5), a2 * Math.sin(a) - 6 * Math.sin(a - 0.5));
+  ctx.lineTo(a2 * Math.cos(a) - 6 * Math.cos(a + 0.5), a2 * Math.sin(a) - 6 * Math.sin(a + 0.5));
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Georgia'; ctx.textAlign = 'center'; ctx.fillText(dist + 'px', 0, 24);
+  ctx.restore();
+}
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  // JUICE: screen shake (camera tremură la impact)
+  if (state.shake > 0) ctx.translate(rand(-state.shake, state.shake), rand(-state.shake, state.shake));
+  drawOrb();
+  drawSkyline();
+  ctx.drawImage(skylineOff, 0, 0);
+  drawFires();
+  for (let i = 0; i < state.gorillas.length; i++) drawGorilla(state.gorillas[i], i);
+  drawTrajectoryPreview();
+  drawAim();
+  drawTrail();
+  for (const s of state.shots) drawShot(s);
+  if (state.lastLanding) drawOffscreenTracker(state.lastLanding.x, state.lastLanding.y, state.lastLanding.kind, state.lastLanding.t);
+  drawParticles();
+  drawHail();
+  // JUICE: flash alb la explozie (peste scenă, sub UI)
+  if (state.flash > 0) { ctx.globalAlpha = state.flash * 0.55; ctx.fillStyle = '#fff'; ctx.fillRect(-12, -12, W + 24, H + 24); ctx.globalAlpha = 1; }
+  ctx.restore();
+  // UI (neafectat de shake)
+  drawWindGauge();
+  drawToast();
+  drawRoundOverBanner();
+}
+
+function loop() { step(); render(); syncSliders(); requestAnimationFrame(loop); }
+
+// ════════════════════════ UI WIRING ════════════════════════
+function refreshProgressUI() {
+  const r = currentRank();
+  const cur = xpForRank(r), nxt = xpForRank(r + 1);
+  const pct = Math.round(((profile.xp - cur) / (nxt - cur)) * 100);
+  document.getElementById('rkLabel').textContent = 'Rank ' + r;
+  document.getElementById('xpfill').style.width = clamp(pct, 0, 100) + '%';
+  document.getElementById('xptext').textContent = (profile.xp - cur) + ' / ' + (nxt - cur) + ' XP';
+  const locked = WEAPONS.filter(w => w.rank > r).sort((a, b) => a.rank - b.rank)[0];
+  document.getElementById('nextunlock').innerHTML = locked
+    ? `Următorul: <b>${locked.icon} ${locked.name}</b> la Rank ${locked.rank}`
+    : 'Toate armele deblocate! 🏆';
+}
+
+// status armă-vs-vreme curentă: {bad, label, color}
+function weaponWeatherStatus(w) {
+  if (!state || !state.weather) return { bad: false };
+  const id = state.weather.id;
+  if (id === 'hail' && hitByHail(w)) return { bad: true, label: 'slabă pe grindină — cade scurt', color: '#ff7777' };
+  if (id === 'heat' && rotsInHeat(w)) return { bad: true, label: 'se strică pe arșiță la distanță', color: '#ff9944' };
+  if (id === 'wind' && w.wind >= 0.8) return { bad: true, label: 'deviată tare de vânt', color: '#ffcc55' };
+  if (id === 'hail' && w.fire) return { bad: true, label: 'focul e stins de grindină', color: '#ff7777' };
+  if (w.metal || (id === 'hail' && w.mass === 'heavy')) return { bad: false, label: 'rezistentă la vremea asta ✓', color: '#66ff99' };
+  return { bad: false, label: '', color: '#66ff99' };
+}
+
+function renderWeaponBar() {
+  const box = document.getElementById('weapons');
+  box.innerHTML = '';
+  for (const w of WEAPONS) {
+    const unlocked = isUnlocked(w);
+    const st = unlocked ? weaponWeatherStatus(w) : { bad: false };
+    const chip = document.createElement('div');
+    chip.className = 'wchip' + (w.id === selectedWeaponId ? ' sel' : '') + (unlocked ? '' : ' locked') + (st.bad ? ' weak' : '');
+    chip.innerHTML = `<span class="ic">${w.icon}</span><span class="nm">${unlocked ? w.name : '🔒 Rk ' + w.rank}</span>`;
+    chip.title = unlocked ? (w.desc + (st.label ? ' — ' + st.label : '')) : `Se deblochează la Rank ${w.rank}`;
+    if (unlocked) chip.addEventListener('click', () => { if (botPlayer >= 0 && state.turn === botPlayer) return; selectedWeaponId = w.id; humanWeaponId = w.id; renderWeaponBar(); updateHint(); });
+    box.appendChild(chip);
+  }
+  const wb = document.getElementById('wbtn'); if (wb) wb.textContent = WEAPONS[selectedWeaponId].icon; // sync FAB armă
+}
+
+function updateHint() {
+  const w = WEAPONS[selectedWeaponId];
+  const st = weaponWeatherStatus(w);
+  const tag = st.label ? ` &nbsp;·&nbsp; <b style="color:${st.color}">${st.label}</b>` : '';
+  document.getElementById('hint').innerHTML =
+    `Armă: <b>${w.icon} ${w.name}</b> — ${w.desc}${tag}<br><b>Trage cu degetul</b> de la gorilă în direcția de aruncare (lung = putere), eliberezi = arunci. Sau: ↑↓ unghi, ←→ viteză, Enter, [ ] armă, P preview.`;
+}
+
+function cycleWeapon(d) {
+  if (botPlayer >= 0 && state.turn === botPlayer) return; // nu schimba arma în tura botului
+  const unlocked = WEAPONS.filter(isUnlocked);
+  let i = unlocked.findIndex(w => w.id === selectedWeaponId);
+  i = (i + d + unlocked.length) % unlocked.length;
+  selectedWeaponId = unlocked[i].id;
+  humanWeaponId = selectedWeaponId;
+  renderWeaponBar(); updateHint();
+}
+
+function nudge(id, d) {
+  const el = document.getElementById(id);
+  const min = +el.min, max = +el.max;
+  el.value = clamp((parseFloat(el.value) || 0) + d, min, max);
+}
+
+document.getElementById('fire').addEventListener('click', fire);
+document.getElementById('reset').addEventListener('click', () => init(false));
+const previewLabels = ['🎯 Traseu: OFF', '🎯 Traseu: Scurt', '🎯 Traseu: Complet'];
+function updatePreviewBtn() { document.getElementById('preview').textContent = previewLabels[previewMode]; }
+document.getElementById('preview').addEventListener('click', () => { previewMode = (previewMode + 1) % 3; updatePreviewBtn(); });
+
+// deblochează AudioContext la primul gest (iOS/Chrome)
+['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, audioOn));
+
+// ── DRAG-TO-AIM (touch/mouse): tragi în direcția de aruncare, lungimea = putere; release = trage ──
+function canvasPoint(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * (W / r.width), y: (e.clientY - r.top) * (H / r.height) };
+}
+function aimAllowed() {
+  return state && !state.volleyActive && !state.roundOver && !(botPlayer >= 0 && state.turn === botPlayer);
+}
+function aimUpdate(p) {
+  const g = state.gorillas[state.turn]; if (!g) return;
+  const dir = state.turn === 0 ? 1 : -1;
+  const up = Math.max(0, (g.y - 16) - p.y);                 // cât de sus de gorilă e degetul → elevație
+  const horiz = Math.max(1, Math.abs(p.x - (g.x + dir * 16)));
+  const ang = clamp(Math.atan2(up, horiz) * 180 / Math.PI, 0, 90);
+  const len = Math.hypot(p.x - g.x, p.y - (g.y - 16));
+  const vel = clamp(Math.round(len * 0.55), 10, 200);       // lungimea drag-ului → putere
+  document.getElementById('angle').value = Math.round(ang);
+  document.getElementById('velocity').value = vel;
+}
+canvas.addEventListener('pointerdown', (e) => {
+  audioOn();
+  if (!aimAllowed()) return;
+  e.preventDefault();
+  aim = canvasPoint(e); aimUpdate(aim);
+  try { canvas.setPointerCapture(e.pointerId); } catch (x) {}
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!aim || !aimAllowed()) return;
+  e.preventDefault();
+  aim = canvasPoint(e); aimUpdate(aim);
+});
+function aimEnd(e) {
+  if (!aim) return;
+  const allowed = aimAllowed();
+  const g = state.gorillas[state.turn];
+  const farEnough = g && Math.hypot(aim.x - g.x, aim.y - (g.y - 16)) > 25; // tap accidental pe gorilă = nu trage
+  aim = null;
+  if (allowed && farEnough) { if (e.cancelable) e.preventDefault(); fire(); }
+}
+canvas.addEventListener('pointerup', aimEnd);
+canvas.addEventListener('pointercancel', () => { aim = null; });
+
+// buton mod: 2 Jucători → Bot Ușor → Bot Mediu → Bot Greu (restart curat la schimbare)
+const MODES = [
+  { bp: -1, d: 'mediu', label: '👥 2 Jucători' },
+  { bp: 1, d: 'usor',  label: '🤖 Bot: Ușor' },
+  { bp: 1, d: 'mediu', label: '🤖 Bot: Mediu' },
+  { bp: 1, d: 'greu',  label: '🤖 Bot: Greu' },
+];
+let modeIdx = 0;
+document.getElementById('mode').addEventListener('click', () => {
+  audioOn(); sfxClick();
+  modeIdx = (modeIdx + 1) % MODES.length;
+  botPlayer = MODES[modeIdx].bp; botDiff = MODES[modeIdx].d;
+  document.getElementById('mode').textContent = MODES[modeIdx].label;
+  init(false); // meci nou cu modul ales (omul e mereu Jucător 1)
+});
+
+// buton sunet on/off
+document.getElementById('sound').addEventListener('click', () => {
+  soundOn = !soundOn;
+  if (soundOn) { audioOn(); sfxClick(); }
+  document.getElementById('sound').textContent = soundOn ? '🔊 Sunet' : '🔇 Mut';
+});
+
+document.addEventListener('keydown', (e) => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  const inField = tag === 'input';
+  const big = e.shiftKey ? 5 : 1;
+  switch (e.key) {
+    case 'Enter': e.preventDefault(); fire(); break;
+    case 'ArrowUp': if (!inField) { e.preventDefault(); nudge('angle', big); } break;
+    case 'ArrowDown': if (!inField) { e.preventDefault(); nudge('angle', -big); } break;
+    case 'ArrowRight': if (!inField) { e.preventDefault(); nudge('velocity', big); } break;
+    case 'ArrowLeft': if (!inField) { e.preventDefault(); nudge('velocity', -big); } break;
+    case '[': cycleWeapon(-1); break;
+    case ']': cycleWeapon(1); break;
+    case 'p': case 'P': previewMode = (previewMode + 1) % 3; updatePreviewBtn(); break;
+  }
+});
+['angle', 'velocity'].forEach(id => document.getElementById(id).addEventListener('focus', e => e.target.select()));
+
+// ════════════════════════ CONTROALE MOBIL ════════════════════════
+const IS_TOUCH = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if (IS_TOUCH) document.body.classList.add('touch');
+
+function setupSlider(sliderId, inputId, lo, hi, fmt) {
+  const el = document.getElementById(sliderId);
+  const input = document.getElementById(inputId);
+  const fill = el.querySelector('.vfill'), thumb = el.querySelector('.vthumb'), label = el.querySelector('.vlabel b');
+  function setFromEvent(e) {
+    if (!aimAllowed()) return;
+    audioOn();
+    const r = el.getBoundingClientRect();
+    let frac = 1 - (e.clientY - r.top) / r.height; // sus = max, jos = min
+    input.value = Math.round(lo + clamp(frac, 0, 1) * (hi - lo));
+  }
+  let dragging = false;
+  el.addEventListener('pointerdown', (e) => { if (!aimAllowed()) return; e.preventDefault(); dragging = true; try { el.setPointerCapture(e.pointerId); } catch (x) {} setFromEvent(e); });
+  el.addEventListener('pointermove', (e) => { if (!dragging) return; e.preventDefault(); setFromEvent(e); });
+  el.addEventListener('pointerup', () => { dragging = false; });
+  el.addEventListener('pointercancel', () => { dragging = false; });
+  el._sync = () => {
+    const v = clamp(parseFloat(input.value) || lo, lo, hi);
+    const frac = (v - lo) / (hi - lo);
+    fill.style.height = (frac * 100) + '%';
+    thumb.style.bottom = 'calc(' + (frac * 100) + '% - 20px)';
+    label.textContent = fmt(v);
+    el.classList.toggle('disabled', !aimAllowed());
+  };
+}
+setupSlider('angleSlider', 'angle', 0, 90, v => v + '°');
+setupSlider('velSlider', 'velocity', 10, 200, v => '' + v);
+function syncSliders() {
+  const a = document.getElementById('angleSlider'), b = document.getElementById('velSlider');
+  if (a._sync) a._sync(); if (b._sync) b._sync();
+}
+
+// overlay alegere armă (tile-uri mari, fără zoom)
+function buildWGrid() {
+  const grid = document.getElementById('wgrid'); grid.innerHTML = '';
+  for (const w of WEAPONS) {
+    const st = weaponWeatherStatus(w);
+    const tile = document.createElement('div');
+    tile.className = 'wtile' + (w.id === selectedWeaponId ? ' sel' : '') + (st.bad ? ' weak' : '');
+    tile.innerHTML = `<span class="ic">${w.icon}</span><span class="nm">${w.name}</span>`;
+    tile.addEventListener('click', () => {
+      selectedWeaponId = w.id;
+      if (!(botPlayer >= 0 && state.turn === botPlayer)) humanWeaponId = w.id;
+      renderWeaponBar(); updateHint(); closeW(); sfxClick();
+    });
+    grid.appendChild(tile);
+  }
+}
+function openW() { if (botPlayer >= 0 && state.turn === botPlayer) return; audioOn(); buildWGrid(); document.getElementById('woverlay').classList.remove('hidden'); }
+function closeW() { document.getElementById('woverlay').classList.add('hidden'); }
+document.getElementById('wbtn').addEventListener('click', openW);
+document.getElementById('wclose').addEventListener('click', closeW);
+document.getElementById('woverlay').addEventListener('click', (e) => { if (e.target.id === 'woverlay') closeW(); });
+
+document.getElementById('fireFab').addEventListener('click', () => { audioOn(); fire(); });
+
+function toggleFS() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  const isFS = document.fullscreenElement || document.webkitFullscreenElement;
+  if (!isFS) { if (req) req.call(el); else showToast('iPhone: Share → „Add to Home Screen" pt fullscreen', 240); }
+  else if (exit) exit.call(document);
+}
+document.getElementById('fsbtn').addEventListener('click', () => { audioOn(); toggleFS(); });
+
+// înregistrează service worker (doar pe HTTPS/localhost — peste http LAN eșuează tăcut, e ok)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+// boot
+updatePreviewBtn();
+refreshProgressUI();
+renderWeaponBar();
+updateHint();
+init(false);
+loop();
+</script>
+</body>
+</html>

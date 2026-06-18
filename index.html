@@ -450,13 +450,16 @@ let mpSeed = 0;            // seed-ul comun al meciului (lumea e identică pe am
 let remoteFiring = false;  // true cât aplic lovitura primită de la adversar
 
 // Pornește un meci online: ambele telefoane folosesc ACELAȘI seed → lume identică.
-function mpStart(seed, localIdx) {
+// hash determinist (FNV-1a) → seed comun derivat din CODUL camerei (ambele telefoane îl au, deci nu mai trebuie trimis)
+function hashStr(s) { let h = 2166136261 >>> 0; s = String(s).toUpperCase(); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+function mpStart(code, localIdx) {
+  const seed = hashStr(code);
   mpActive = true; botPlayer = -1; localPlayer = localIdx; mpSeed = seed; dailyMode = false;
-  worldRng = mulberry32(seed >>> 0);
+  worldRng = mulberry32(seed);  // ACELAȘI seed pe ambele (din cod) → hartă identică, garantat
   if (typeof closeLobby === 'function') closeLobby();
   scores = [0, 0];
   init(false);
-  showToast(localIdx === 0 ? '🌐 Online — ești Jucător 1' : '🌐 Online — ești Jucător 2', 220);
+  showToast((localIdx === 0 ? '🌐 Ești Jucător 1' : '🌐 Ești Jucător 2') + ' · cod ' + code, 240);
 }
 // Aplică lovitura primită de la adversar (exact aceleași 3 numere → aceeași simulare)
 function mpApplyShot(a, v, w) {
@@ -1522,6 +1525,7 @@ function whenMpReady(cb, tries) {
   setTimeout(() => whenMpReady(cb, tries + 1), 200);
 }
 function hostRoom() {
+  if (mpActive) mpLeave();
   mpCode = randCode();
   document.getElementById('lcodebig').textContent = mpCode;
   document.getElementById('lshare').classList.remove('hidden');
@@ -1531,10 +1535,11 @@ function hostRoom() {
 function joinRoomUI(code) {
   code = (code || '').toUpperCase().trim();
   if (code.length < 3) { lobbyStatus('Introdu codul camerei.'); return; }
+  if (mpActive) mpLeave();
   mpCode = code;
   whenMpReady(() => { lobbyStatus('🔌 Mă conectez la ' + code + '…'); window.__mpConnect(code, false); });
 }
-document.getElementById('online').addEventListener('click', () => { if (mpActive) { mpLeave(); init(false); document.getElementById('online').textContent = '🌐 Online'; } else openLobby(); });
+document.getElementById('online').addEventListener('click', () => { openLobby(); }); // deschide MEREU dialogul
 document.getElementById('lcreate').addEventListener('click', hostRoom);
 document.getElementById('ljoin').addEventListener('click', () => joinRoomUI(document.getElementById('lcode').value));
 document.getElementById('lclose').addEventListener('click', closeLobby);
@@ -1592,7 +1597,7 @@ loop();
       ],
     },
   };
-  let room = null, sendShot = null, sendStart = null, isHost = false, started = false, joinTimer = null;
+  let room = null, sendShot = null, isHost = false, started = false, joinTimer = null;
 
   window.__mpConnect = function (code, asHost) {
     if (!joinRoom) { st('❌ Modul online neîncărcat' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')); return; }
@@ -1601,21 +1606,17 @@ loop();
       st('📡 Conectare la relee…');
       room = joinRoom(config, 'gorillas-' + code);
       const [sShot, gShot] = room.makeAction('shot');
-      const [sStart, gStart] = room.makeAction('start');
-      sendShot = sShot; sendStart = sStart;
+      sendShot = sShot;
       window.__mpSend = (obj) => { if (obj && obj.t === 'shot' && sendShot) sendShot(obj); };
       gShot((d) => { if (window.mpApplyShot) window.mpApplyShot(d.a, d.v, d.w); });
-      gStart((d) => { if (!started) { started = true; clearTimeout(joinTimer); if (window.mpStart) window.mpStart(d.seed, 1); } });
       st(asHost ? '🟢 În cameră ' + code + ' — aștept adversarul…' : '🔌 În cameră ' + code + ' — caut host-ul…');
+      // ambele pornesc la conectare cu seed derivat din COD (fără schimb de seed → imposibil să difere harta)
       room.onPeerJoin(() => {
         clearTimeout(joinTimer);
+        if (started) return;
+        started = true;
         st('✅ Adversar găsit! Pornesc…');
-        if (isHost && !started) {
-          started = true;
-          const seed = Math.floor(Math.random() * 2147483647);
-          if (sendStart) sendStart({ seed });
-          if (window.mpStart) window.mpStart(seed, 0);
-        }
+        if (window.mpStart) window.mpStart(code, asHost ? 0 : 1);
       });
       room.onPeerLeave(() => { if (window.__mpPeerLeft) window.__mpPeerLeft(); });
       clearTimeout(joinTimer);

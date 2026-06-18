@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gorillas",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8762", "--directory", "/Users/cosmincosmeanu/gorillas"],
+      "port": 8762
+    }
+  ]
+}

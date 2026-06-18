@@ -199,6 +199,9 @@
     background: linear-gradient(180deg,#5a3e6e,#3a2850); }
   body.touch #fsbtn { width: 44px; height: 44px; font-size: 19px; top: 6px; right: 6px;
     background: linear-gradient(180deg,#5a3e6e,#3a2850); }
+  body.touch #shareFab { width: 44px; height: 44px; font-size: 19px; top: 6px; right: 58px;
+    background: linear-gradient(180deg,#5a3e6e,#3a2850); }
+  #streak { color: #ff8c33; font-weight: 500; }
 
   /* overlay alegere armă (tile-uri mari) */
   #woverlay { position: fixed; inset: 0; z-index: 50; background: rgba(5,2,12,0.82);
@@ -226,6 +229,7 @@
 <div id="velSlider" class="vslider right"><div class="vfill"></div><div class="vthumb"></div><div class="vlabel">VITEZĂ<br><b>80</b></div></div>
 <button id="wbtn" class="fab">🍌</button>
 <button id="fireFab" class="fab">💥</button>
+<button id="shareFab" class="fab small">📸</button>
 <button id="fsbtn" class="fab small">⛶</button>
 <div id="woverlay" class="hidden"><div id="wsheet"><div id="wgridTitle">Alege arma</div><div id="wgrid"></div><button id="wclose">Închide</button></div></div>
 
@@ -236,12 +240,15 @@
   <label id="lblVel">Viteză: <input id="velocity" type="number" min="10" max="200" value="80"></label>
   <button id="fire">Aruncă</button>
   <button id="mode" class="sec">👥 2 Jucători</button>
+  <button id="daily" class="sec">📅 Provocarea zilei</button>
+  <button id="share" class="sec">📸 Share</button>
   <button id="sound" class="sec">🔊 Sunet</button>
   <button id="preview" class="sec">🎯 Traseu: Scurt</button>
   <button id="reset" class="sec">Restart meci</button>
 </div>
 <div id="rankbar">
   <span class="rk" id="rkLabel">Rank 0</span>
+  <span id="streak" title="Zile consecutive jucate">🔥 0</span>
   <div id="xpwrap"><div id="xpfill"></div></div>
   <span id="xptext"></span>
   <span id="nextunlock"></span>
@@ -256,6 +263,16 @@ const W = canvas.width, H = canvas.height;
 const rand = (a, b) => Math.random() * (b - a) + a;
 const randInt = (a, b) => Math.floor(rand(a, b + 1));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// ── RNG seedabil pentru DAILY CHALLENGE (generare lume deterministă; cosmeticele rămân pe Math.random) ──
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+let worldRng = Math.random;                          // folosit DOAR de genSkyline + vreme + vânt
+const wrand = (a, b) => worldRng() * (b - a) + a;
+const wrandInt = (a, b) => Math.floor(wrand(a, b + 1));
+let dailyMode = false;
+function dailySeedNum() { const d = new Date(); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+function todayStr() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function ymd(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 
 // ════════════════════════ AUDIO (WebAudio sintetic — zero assets) ════════════════════════
 let AC = null;
@@ -347,9 +364,24 @@ const PROFILE_KEY = 'gorillas_profile_v1';
 let profile = loadProfile();
 function loadProfile() {
   try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY)); if (p && typeof p.xp === 'number') return p; } catch (e) {}
-  return { xp: 0 };
+  return { xp: 0, streak: 0, lastPlayed: '' };
 }
 function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {} }
+// STREAK: zile consecutive cu cel puțin un meci jucat (mecanica #1 de retenție D1→D7)
+function bumpStreak() {
+  const t = todayStr();
+  if (profile.lastPlayed === t) return;            // deja numărat azi
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  profile.streak = (profile.lastPlayed === ymd(y)) ? (profile.streak || 0) + 1 : 1;
+  profile.lastPlayed = t;
+  saveProfile();
+  showToast('🔥 Streak ' + profile.streak + (profile.streak === 1 ? ' zi!' : ' zile!'), 180);
+  updateStreakUI();
+}
+function updateStreakUI() {
+  const el = document.getElementById('streak');
+  if (el) el.textContent = '🔥 ' + (profile.streak || 0);
+}
 // cumulative XP needed to REACH rank r:  T(r)=100r+20r(r-1)
 function xpForRank(r) { return 100 * r + 20 * r * (r - 1); }
 function rankFromXp(xp) { let r = 0; while (xp >= xpForRank(r + 1)) r++; return r; }
@@ -390,17 +422,17 @@ function genSkyline() {
   const groundY = H - 20;
   let x = 0;
   while (x < W) {
-    let w = randInt(70, 115);
+    let w = wrandInt(70, 115);
     if (x + w > W) w = W - x;
     if (w < 40) { if (buildings.length) buildings[buildings.length - 1].w += w; break; }
-    const h = randInt(130, 350);
+    const h = wrandInt(130, 350);
     const y = groundY - h;
-    const color = PALETTE.buildings[randInt(0, PALETTE.buildings.length - 1)];
+    const color = PALETTE.buildings[wrandInt(0, PALETTE.buildings.length - 1)];
     const windows = [];
     const winW = 9, winH = 11, gx = 6, gy = 7;
     for (let wy = y + 18; wy < groundY - 18; wy += winH + gy) {
       for (let wx = x + 9; wx < x + w - 14; wx += winW + gx) {
-        windows.push({ x: wx, y: wy, lit: Math.random() < 0.5 });
+        windows.push({ x: wx, y: wy, lit: worldRng() < 0.5 });
       }
     }
     buildings.push({ x, y, w, h, color, windows });
@@ -416,7 +448,9 @@ function applyTheme(t) {
 
 function init(keepScores) {
   if (!keepScores) scores = [0, 0];
-  const weather = WEATHERS[randInt(0, WEATHERS.length - 1)];
+  // DAILY: aceeași lume (hartă+vreme+vânt) pentru toți, seedată după data zilei. Altfel — aleatoriu.
+  worldRng = dailyMode ? mulberry32(dailySeedNum()) : Math.random;
+  const weather = WEATHERS[wrandInt(0, WEATHERS.length - 1)];
   applyTheme(themeByName(weather.theme)); // tema urmează vremea = varietate + coerență
   const buildings = genSkyline();
   const b1 = buildings[1] || buildings[0];
@@ -428,9 +462,9 @@ function init(keepScores) {
       { x: b1.x + b1.w / 2, y: b1.y - 24, alive: true },
       { x: b2.x + b2.w / 2, y: b2.y - 24, alive: true },
     ],
-    turn: Math.random() < 0.5 ? 0 : 1,
+    turn: worldRng() < 0.5 ? 0 : 1,
     weather,
-    wind: rand(-weather.windMax, weather.windMax),
+    wind: wrand(-weather.windMax, weather.windMax),
     shots: [],
     volleyActive: false,
     volleyResolved: false,
@@ -495,6 +529,7 @@ function fire() {
   state.volleyResolved = false;
   sfxThrow();
   awardXp(4); // engagement XP la fiecare tragere
+  bumpStreak(); // marchează ziua jucată (o dată pe zi)
 }
 
 function addCrater(x, y, r) { if (x > -r && x < W + r) state.craters.push({ x, y, r }); }
@@ -819,7 +854,7 @@ function nextTurn() {
     return;
   }
   state.turn = 1 - state.turn;
-  state.wind = rand(-state.weather.windMax, state.weather.windMax);
+  state.wind = wrand(-state.weather.windMax, state.weather.windMax);
   if (botPlayer >= 0 && state.turn !== botPlayer) { selectedWeaponId = humanWeaponId; renderWeaponBar(); updateHint(); }
   updateUI();
   maybeBotTurn();
@@ -1379,6 +1414,38 @@ function toggleFS() {
 }
 document.getElementById('fsbtn').addEventListener('click', () => { audioOn(); toggleFS(); });
 
+// SHARE: capturează cadrul curent → share nativ (iOS: salvează în Poze / trimite pe WhatsApp) sau download
+function shareShot() {
+  try {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], 'gorillas.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], text: 'Gorillas! 🍌💥 ccsm81.github.io/gorillas' }).catch(() => {});
+      } else {
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'gorillas.png'; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      }
+    }, 'image/png');
+  } catch (e) {}
+}
+document.getElementById('share').addEventListener('click', () => { audioOn(); shareShot(); });
+document.getElementById('shareFab').addEventListener('click', () => { audioOn(); shareShot(); });
+
+// DAILY CHALLENGE toggle
+function updateDailyBtn() {
+  const b = document.getElementById('daily');
+  b.textContent = dailyMode ? '📅 Daily: PORNIT' : '📅 Provocarea zilei';
+  b.style.borderColor = dailyMode ? '#ffd700' : '';
+}
+document.getElementById('daily').addEventListener('click', () => {
+  audioOn(); sfxClick();
+  dailyMode = !dailyMode;
+  updateDailyBtn();
+  if (dailyMode) showToast('📅 Provocarea zilei — aceeași hartă pentru toți azi!', 200);
+  init(false);
+});
+
 // înregistrează service worker (doar pe HTTPS/localhost — peste http LAN eșuează tăcut, e ok)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
@@ -1386,6 +1453,8 @@ if ('serviceWorker' in navigator) {
 
 // boot
 updatePreviewBtn();
+updateDailyBtn();
+updateStreakUI();
 refreshProgressUI();
 renderWeaponBar();
 updateHint();

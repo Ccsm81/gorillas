@@ -1462,8 +1462,8 @@ function buildWGrid() {
     grid.appendChild(tile);
   }
 }
-function openW() { if (botPlayer >= 0 && state.turn === botPlayer) return; audioOn(); buildWGrid(); document.getElementById('woverlay').classList.remove('hidden'); }
-function closeW() { document.getElementById('woverlay').classList.add('hidden'); }
+function openW() { if (botPlayer >= 0 && state.turn === botPlayer) return; audioOn(); buildWGrid(); const o = document.getElementById('woverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
+function closeW() { const o = document.getElementById('woverlay'); o.classList.add('hidden'); o.style.display = 'none'; }
 document.getElementById('wbtn').addEventListener('click', openW);
 document.getElementById('wclose').addEventListener('click', closeW);
 document.getElementById('woverlay').addEventListener('click', (e) => { if (e.target.id === 'woverlay') closeW(); });
@@ -1515,8 +1515,8 @@ document.getElementById('daily').addEventListener('click', () => {
 
 // ════════════════════════ LOBBY ONLINE ════════════════════════
 function lobbyStatus(msg) { const s = document.getElementById('lstatus'); if (s) s.textContent = msg || ''; }
-function openLobby() { audioOn(); document.getElementById('lshare').classList.add('hidden'); lobbyStatus(''); document.getElementById('lobby').classList.remove('hidden'); }
-function closeLobby() { document.getElementById('lobby').classList.add('hidden'); }
+function openLobby() { audioOn(); document.getElementById('lshare').classList.add('hidden'); lobbyStatus(''); const l = document.getElementById('lobby'); l.classList.remove('hidden'); l.style.display = 'flex'; }
+function closeLobby() { const l = document.getElementById('lobby'); l.classList.add('hidden'); l.style.display = 'none'; }
 function randCode() { const A = 'ABCDEFGHJKLMNPRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 4; i++) c += A[Math.floor(Math.random() * A.length)]; return c; }
 let mpCode = '';
 function whenMpReady(cb, tries) {
@@ -1561,7 +1561,7 @@ window.__mpPeerLeft = () => { showToast('Adversarul a plecat', 200); mpActive = 
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v9';
+const APP_VERSION = 'v10';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

@@ -1,5 +1,5 @@
 // Service worker: network-first pentru HTML (mereu ultima versiune când e net), cache-first pt restul (offline OK)
-const CACHE = 'gorillas-v9b';
+const CACHE = 'gorillas-v10';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-180.png'];
 
 self.addEventListener('install', (e) => {

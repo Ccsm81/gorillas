@@ -1514,20 +1514,25 @@ function openLobby() { audioOn(); document.getElementById('lshare').classList.ad
 function closeLobby() { document.getElementById('lobby').classList.add('hidden'); }
 function randCode() { const A = 'ABCDEFGHJKLMNPRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 4; i++) c += A[Math.floor(Math.random() * A.length)]; return c; }
 let mpCode = '';
+function whenMpReady(cb, tries) {
+  tries = tries || 0;
+  if (window.__mpConnect) { cb(); return; }
+  if (tries > 40) { lobbyStatus('❌ Nu s-a încărcat modulul online. Verifică internetul și reîncarcă pagina.'); return; }
+  lobbyStatus('Se încarcă modulul online… (' + tries + ')');
+  setTimeout(() => whenMpReady(cb, tries + 1), 200);
+}
 function hostRoom() {
-  if (!window.__mpConnect) { lobbyStatus('Online indisponibil (verifică internetul).'); return; }
   mpCode = randCode();
   document.getElementById('lcodebig').textContent = mpCode;
   document.getElementById('lshare').classList.remove('hidden');
-  lobbyStatus('Aștept adversarul…');
-  window.__mpConnect(mpCode, true);
+  lobbyStatus('Pregătesc camera…');
+  whenMpReady(() => { lobbyStatus('🟢 Cameră ' + mpCode + ' — aștept adversarul…'); window.__mpConnect(mpCode, true); });
 }
 function joinRoomUI(code) {
-  if (!window.__mpConnect) { lobbyStatus('Online indisponibil (verifică internetul).'); return; }
   code = (code || '').toUpperCase().trim();
   if (code.length < 3) { lobbyStatus('Introdu codul camerei.'); return; }
-  mpCode = code; lobbyStatus('Mă conectez la ' + code + '…');
-  window.__mpConnect(code, false);
+  mpCode = code;
+  whenMpReady(() => { lobbyStatus('🔌 Mă conectez la ' + code + '…'); window.__mpConnect(code, false); });
 }
 document.getElementById('online').addEventListener('click', () => { if (mpActive) { mpLeave(); init(false); document.getElementById('online').textContent = '🌐 Online'; } else openLobby(); });
 document.getElementById('lcreate').addEventListener('click', hostRoom);
@@ -1566,45 +1571,62 @@ loop();
 
 <!-- ── MODUL MULTIPLAYER (Trystero / WebRTC, relee publice — fără server propriu) ── -->
 <script type="module">
-  import { joinRoom } from 'https://esm.sh/trystero@0.25.2/nostr';
+  const st = (m) => { if (window.__mpStatus) window.__mpStatus(m); };
+  let joinRoom = null;
+  try {
+    ({ joinRoom } = await import('https://esm.sh/trystero@0.25.2/nostr'));
+    window.__mpReady = true;
+  } catch (e) {
+    window.__mpLoadError = String(e && e.message || e);
+  }
   const config = {
     appId: 'gorillas-ccsm81',
+    relayUrls: ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.snort.social', 'wss://nostr-pub.wellorder.net', 'wss://relay.primal.net'],
+    relayRedundancy: 4,
     rtcConfig: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun.cloudflare.com:3478' },
         { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
         { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
       ],
     },
   };
-  let room = null, sendShot = null, sendStart = null, isHost = false, started = false;
+  let room = null, sendShot = null, sendStart = null, isHost = false, started = false, joinTimer = null;
 
   window.__mpConnect = function (code, asHost) {
+    if (!joinRoom) { st('❌ Modul online neîncărcat' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')); return; }
     try {
       isHost = asHost; started = false;
+      st('📡 Conectare la relee…');
       room = joinRoom(config, 'gorillas-' + code);
       const [sShot, gShot] = room.makeAction('shot');
       const [sStart, gStart] = room.makeAction('start');
       sendShot = sShot; sendStart = sStart;
       window.__mpSend = (obj) => { if (obj && obj.t === 'shot' && sendShot) sendShot(obj); };
       gShot((d) => { if (window.mpApplyShot) window.mpApplyShot(d.a, d.v, d.w); });
-      gStart((d) => { if (!started) { started = true; if (window.__mpConnected) window.__mpConnected(); if (window.mpStart) window.mpStart(d.seed, 1); } });
+      gStart((d) => { if (!started) { started = true; clearTimeout(joinTimer); if (window.mpStart) window.mpStart(d.seed, 1); } });
+      st(asHost ? '🟢 În cameră ' + code + ' — aștept adversarul…' : '🔌 În cameră ' + code + ' — caut host-ul…');
       room.onPeerJoin(() => {
-        if (window.__mpStatus) window.__mpStatus('Adversar găsit!');
+        clearTimeout(joinTimer);
+        st('✅ Adversar găsit! Pornesc…');
         if (isHost && !started) {
           started = true;
           const seed = Math.floor(Math.random() * 2147483647);
           if (sendStart) sendStart({ seed });
-          if (window.__mpConnected) window.__mpConnected();
           if (window.mpStart) window.mpStart(seed, 0);
         }
       });
       room.onPeerLeave(() => { if (window.__mpPeerLeft) window.__mpPeerLeft(); });
+      clearTimeout(joinTimer);
+      joinTimer = setTimeout(() => { if (!started) st('⏳ Încă nu s-a conectat. Verifică: ACELAȘI cod pe ambele + internet bun. Mai aștept…'); }, 22000);
     } catch (e) {
-      if (window.__mpStatus) window.__mpStatus('Eroare conexiune online.');
+      st('❌ Eroare: ' + (e && e.message || e));
     }
   };
-  window.__mpDisconnect = function () { try { if (room) room.leave(); } catch (e) {} room = null; window.__mpSend = null; };
+  window.__mpDisconnect = function () { try { if (room) room.leave(); } catch (e) {} room = null; window.__mpSend = null; started = false; };
+  st(joinRoom ? 'Modul online gata.' : ('❌ Modul online nu s-a încărcat' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')));
 </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 // Service worker minimal: cache-first → jocul merge OFFLINE după prima încărcare (necesită HTTPS sau localhost)
-const CACHE = 'gorillas-v3';
+const CACHE = 'gorillas-v4';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-180.png'];
 
 self.addEventListener('install', (e) => {

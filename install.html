@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Instalează Gorillas</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Georgia', serif; color: #fff; background: linear-gradient(180deg,#2a1b4d,#0a0418); min-height: 100vh; padding: 18px 16px 40px; -webkit-text-size-adjust: 100%; }
+  .wrap { max-width: 460px; margin: 0 auto; }
+  h1 { text-align: center; color: #ffd700; font-size: 26px; letter-spacing: 3px; text-shadow: 0 0 16px rgba(255,215,0,0.5); margin-bottom: 4px; }
+  .sub { text-align: center; color: #cbb8e0; font-size: 14px; margin-bottom: 18px; }
+  .card { background: rgba(255,255,255,0.06); border: 1px solid #5a3e6e; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 17px; color: #ffd700; margin-bottom: 10px; }
+  ol { margin: 0 0 0 20px; } li { margin: 7px 0; font-size: 15px; line-height: 1.45; }
+  b { color: #ffd84a; }
+  .qr { background: #fff; border-radius: 12px; padding: 12px; width: 220px; margin: 6px auto 4px; display: flex; align-items: center; justify-content: center; }
+  .qr svg { width: 196px; height: 196px; display: block; }
+  .url { text-align: center; font-size: 15px; color: #7fd0ff; word-break: break-all; margin: 8px 0; }
+  .btn { display: block; width: 100%; text-align: center; text-decoration: none; color: #fff; font-family: inherit; font-weight: bold; font-size: 16px; padding: 14px; border-radius: 10px; border: none; cursor: pointer; margin: 8px 0; }
+  .btn.play { background: linear-gradient(180deg,#ff7340,#d04820); }
+  .btn.sec { background: linear-gradient(180deg,#5a3e6e,#3a2850); border: 1px solid #6e5080; }
+  .note { font-size: 13px; color: #aaa; font-style: italic; margin-top: 8px; }
+  .tag { display: inline-block; font-size: 12px; background: #3a2850; border: 1px solid #6e5080; border-radius: 6px; padding: 2px 8px; color: #cbb8e0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🍌 GORILLAS</h1>
+  <div class="sub">Aruncă banane explozive · 1 sau 2 jucători · online pe 2 telefoane</div>
+
+  <div class="card" style="text-align:center;">
+    <h2 style="text-align:center;">Scanează cu camera telefonului</h2>
+    <div class="qr" id="qr"></div>
+    <div class="url" id="url">ccsm81.github.io/gorillas/?app</div>
+    <button class="btn sec" id="share">📤 Trimite link-ul</button>
+    <a class="btn play" href="https://ccsm81.github.io/gorillas/?app">▶ Deschide jocul</a>
+  </div>
+
+  <div class="card">
+    <h2>📲 Instalare pe iPhone <span class="tag">iOS</span></h2>
+    <ol>
+      <li>Deschide link-ul de mai sus în <b>Safari</b> (nu în alt browser).</li>
+      <li>Apasă butonul <b>Share</b> (pătratul cu săgeată în sus, jos pe ecran).</li>
+      <li>Derulează și apasă <b>„Adăugați la ecranul principal"</b>.</li>
+      <li>Apasă <b>Add / Adăugați</b> (dreapta sus).</li>
+      <li>Pornește jocul din <b>iconița Gorillas</b> de pe ecran. La întrebarea <b>„Deschideți ca aplicație web?"</b> → apasă <b>Da</b>.</li>
+    </ol>
+    <div class="note">Se deschide pe tot ecranul, ca o aplicație. Merge și offline după prima deschidere.</div>
+  </div>
+
+  <div class="card">
+    <h2>🤖 Instalare pe Android <span class="tag">Android</span></h2>
+    <ol>
+      <li>Deschide link-ul în <b>Chrome</b>.</li>
+      <li>Meniul <b>⋮</b> (dreapta sus) → <b>„Instalează aplicația"</b> / „Adaugă la ecranul principal".</li>
+      <li>Confirmă. Apare iconița și se deschide ca aplicație.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>🗑️ Dezinstalare</h2>
+    <ol>
+      <li><b>iPhone:</b> ține apăsat pe iconița Gorillas → <b>„Ștergeți marcajul"</b> / „Eliminați aplicația" → confirmă.</li>
+      <li>Dacă nu apare opțiunea: ține apăsat pe un loc gol până tremură ecranul → apasă <b>„−"</b> de pe iconiță.</li>
+      <li>Ultima soluție (sigură): <b>Setări → General → Transferați sau resetați → Resetați aspectul ecranului principal</b> (rearanjează aplicațiile și șterge scurtăturile web).</li>
+      <li><b>Android:</b> ține apăsat pe iconiță → <b>Dezinstalează</b> / trage la „Remove".</li>
+    </ol>
+  </div>
+
+  <div class="note" style="text-align:center;">Nu e nevoie de App Store sau cont — e o aplicație web instalabilă.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+  var URL_GAME = 'https://ccsm81.github.io/gorillas/?app';
+  document.getElementById('url').textContent = URL_GAME.replace('https://', '');
+  try {
+    var qr = qrcode(0, 'M'); qr.addData(URL_GAME); qr.make();
+    document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 1 });
+  } catch (e) { document.getElementById('qr').innerHTML = '<span style="color:#333;font-size:12px;padding:20px;">Deschide link-ul de mai jos</span>'; }
+  document.getElementById('share').addEventListener('click', function () {
+    if (navigator.share) navigator.share({ title: 'Gorillas', text: 'Hai la Gorillas! 🍌💥', url: URL_GAME }).catch(function () {});
+    else if (navigator.clipboard) { navigator.clipboard.writeText(URL_GAME); this.textContent = '✅ Link copiat!'; }
+  });
+</script>
+</body>
+</html>

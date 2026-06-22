@@ -216,6 +216,8 @@
   .wtile .ic { font-size: 30px; } .wtile .nm { font-size: 11px; color: #ddd; text-align: center; }
   .wtile.sel { border-color: #ffd700; box-shadow: 0 0 12px rgba(255,215,0,0.5); }
   .wtile.weak { border-color: #b0405a; }
+  .wtile.locked { opacity: 0.42; filter: grayscale(0.7); cursor: not-allowed; }
+  .wtile.locked .nm { color: #f88; }
   .wtile.weak .nm::after { content: ' ⚠'; }
   #wclose { display: block; width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; }
 
@@ -234,6 +236,18 @@
   #lcodebig { font-size: 34px; letter-spacing: 8px; color: #ffd700; font-weight: bold; margin: 8px 0; }
   #lhint { color: #cbb8e0; font-size: 12px; margin-bottom: 8px; }
   #lclose { background: linear-gradient(180deg,#5a3e6e,#3a2850) !important; }
+
+  /* ── missions (R4) ── */
+  #missions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 1000px; }
+  .mchip { display: flex; flex-direction: column; align-items: flex-start; background: rgba(20,8,40,0.85);
+    border: 1px solid #5a3e6e; border-radius: 7px; padding: 4px 9px; }
+  .mchip.done { border-color: #5fbf6a; opacity: 0.65; }
+  .mchip .mtxt { color: #ddd; font-size: 12px; }
+  .mchip .mprog { color: #ffd700; font-size: 10px; }
+  body.touch #missions { position: fixed; top: 42px; right: 4px; left: auto; max-width: 42vw; z-index: 24;
+    flex-direction: column; gap: 3px; justify-content: flex-start; align-items: flex-end; }
+  body.touch .mchip { padding: 2px 6px; background: rgba(20,8,40,0.55); }
+  body.touch .mchip .mtxt { font-size: 10px; } body.touch .mchip .mprog { font-size: 9px; }
 
   /* ── iOS install hint (Add to Home Screen) ── */
   #iosInstall { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 72;
@@ -299,6 +313,7 @@
 </div>
 <div id="weapons"></div>
 <div id="hint"></div>
+<div id="missions"></div>
 <div id="ver"></div>
 
 <script>
@@ -378,6 +393,13 @@ const THEMES = [
     buildings: ['#c2683f','#1f8f86','#d98a4a','#2a9a90','#b05030'], windowOn:'#ffe0b0', windowOff:'#0a3a40', ground:'#063038', orb:'none', orbColor:'160,255,235' },
   { name: 'Bomboane', sky: 'linear-gradient(180deg,#2a0a3a 0%,#5a1466 40%,#a02a8a 75%,#ff6ab0 100%)',
     buildings: ['#ff5fa2','#7a4fdd','#ff9f4f','#4fd0ff','#c84fff'], windowOn:'#ffffff', windowOff:'#3a1a4a', ground:'#2a0a3a', orb:'none', orbColor:'255,150,210' },
+  // ── teme noi v17 (același stil curat de oraș) ──
+  { name: 'Sunrise', sky: 'linear-gradient(180deg,#ffb37a 0%,#ff8e9e 30%,#c98fc0 60%,#7a6aa8 85%,#3a3a66 100%)',
+    buildings: ['#5a4a72','#6e5a86','#46395e','#7e6a96','#544470'], windowOn:'#fff0b0', windowOff:'#2a2040', ground:'#241a38', orb:'sun', orbColor:'255,220,180' },
+  { name: 'Aurora', sky: 'linear-gradient(180deg,#04101a 0%,#0a3a3a 30%,#1a5a4a 50%,#2a2a6a 75%,#0a0f2a 100%)',
+    buildings: ['#10202e','#16303a','#0c1822','#1e3a46','#142a32'], windowOn:'#aeffd0', windowOff:'#08130c', ground:'#04100a', orb:'moon', orbColor:'200,255,220' },
+  { name: 'Desert', sky: 'linear-gradient(180deg,#ffd27a 0%,#ffb060 35%,#e88a4a 65%,#b85a3a 100%)',
+    buildings: ['#9a6a44','#b07a4e','#7e5436','#c4895a','#8e5e3e'], windowOn:'#fff0c0', windowOff:'#4a3020', ground:'#6e4428', orb:'sun', orbColor:'255,240,200' },
 ];
 let PALETTE = THEMES[0];
 const boom = ['#ff3833','#ff8c33','#ffd633','#ffffff'];
@@ -430,6 +452,9 @@ const BIOMES = [
   { name:'The Moon',        theme:'Spațiu',     terrain:'mesa',  weather:'calm', ambient:'star'   },
   { name:'The Depths',      theme:'Subacvatic', terrain:'tower', weather:'calm', ambient:'bubble' },
   { name:'Candy Land',      theme:'Bomboane',   terrain:'tower', weather:'wind', ambient:'none'   },
+  { name:'Dawn City',       theme:'Sunrise',    terrain:'city',  weather:'calm', ambient:'none'   },
+  { name:'Aurora',          theme:'Aurora',     terrain:'city',  weather:'hail', ambient:'star'   },
+  { name:'Desert City',     theme:'Desert',     terrain:'city',  weather:'heat', ambient:'none'   },
 ];
 
 // ════════════════════════ PROGRESSION (localStorage) ════════════════════════
@@ -437,8 +462,13 @@ const PROFILE_KEY = 'gorillas_profile_v1';
 let profile = loadProfile();
 function loadProfile() {
   try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY));
-    if (p && Number.isFinite(p.xp) && p.xp >= 0) { p.xp = Math.min(p.xp, 1e12); return p; } } catch (e) {}  // L5: respinge XP corupt/Infinity
-  return { xp: 0, streak: 0, lastPlayed: '' };
+    if (p && Number.isFinite(p.xp) && p.xp >= 0) {
+      p.xp = Math.min(p.xp, 1e12);
+      if (!Number.isFinite(p.aim) || p.aim < 0) p.aim = 0;     // puncte de traiectorie (R1) câștigate la meciuri
+      if (!Array.isArray(p.missions)) p.missions = [];          // misiuni active (R4)
+      return p;
+    } } catch (e) {}  // L5: respinge XP corupt/Infinity
+  return { xp: 0, streak: 0, lastPlayed: '', aim: 0, missions: [] };
 }
 function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {} }
 // STREAK: zile consecutive cu cel puțin un meci jucat (mecanica #1 de retenție D1→D7)
@@ -463,9 +493,18 @@ function rankFromXp(xp) {   // L5: formă închisă (fără buclă care înghea�
   return Math.max(0, Math.floor((-80 + Math.sqrt(6400 + 80 * xp)) / 40));
 }
 function currentRank() { return rankFromXp(profile.xp); }
-// Feedback unanim adolescenți: deblocarea armelor la rank ucide descoperirea — toate disponibile în meci.
-// Rangul/XP rămân ca progres de prestigiu (viitor: skins/cosmetice).
-function isUnlocked(w) { return true; }
+// R3: armele se deblochează pe măsură ce crește XP-ul (rank). Banana (rank 0) e mereu deblocată.
+function isUnlocked(w) { return currentRank() >= w.rank; }
+// R3: vremea e CORELATĂ cu deblocările — cât ai doar banană (rank 0) e mereu SENIN; pe rând apar
+// vânt (după Bilă Grea, rank 2, imună la vreme), apoi grindină (rank 4), apoi arșiță (rank 6).
+// DOAR în single-player; online/daily rămân pe seed (identice pe ambele telefoane).
+function allowedWeatherIds() {
+  const r = currentRank(), ids = ['calm'];
+  if (r >= 2) ids.push('wind');
+  if (r >= 4) ids.push('hail');
+  if (r >= 6) ids.push('heat');
+  return ids;
+}
 function awardXp(n) {
   const before = currentRank();
   profile.xp += n;
@@ -478,6 +517,58 @@ function awardXp(n) {
   }
   refreshProgressUI();
   renderWeaponBar();
+}
+
+// ════════════════════════ MISSIONS (R4) — dau XP → deblochează arme ════════════════════════
+const MISSION_POOL = [
+  { key:'rounds3', text:'Win 3 rounds',           goal:3, reward:15, ev:'roundWin' },
+  { key:'match1',  text:'Win a match',            goal:1, reward:30, ev:'matchWin' },
+  { key:'balloon3',text:'Pop 3 balloons',         goal:3, reward:15, ev:'balloon' },
+  { key:'wind1',   text:'Win a round in the wind', goal:1, reward:20, ev:'windWin' },
+  { key:'shots8',  text:'Fire 8 shots',           goal:8, reward:10, ev:'shot' },
+  { key:'rounds6', text:'Win 6 rounds',           goal:6, reward:30, ev:'roundWin' },
+];
+function newMission(exclude) {
+  const taken = new Set((exclude || []).map(m => m.key));
+  const avail = MISSION_POOL.filter(t => !taken.has(t.key));
+  const src = avail.length ? avail : MISSION_POOL;
+  const t = src[randInt(0, src.length - 1)];
+  return { key: t.key, text: t.text, goal: t.goal, reward: t.reward, ev: t.ev, prog: 0 };
+}
+function initMissions() {
+  if (!Array.isArray(profile.missions) || profile.missions.length < 3) {
+    profile.missions = [];
+    while (profile.missions.length < 3) profile.missions.push(newMission(profile.missions));
+    saveProfile();
+  }
+  renderMissions();
+}
+function missionEvent(ev, n) {
+  if (!Array.isArray(profile.missions)) return;
+  n = n || 1; let changed = false;
+  for (let i = 0; i < profile.missions.length; i++) {
+    const m = profile.missions[i];
+    if (m.ev !== ev || m.prog >= m.goal) continue;
+    m.prog = Math.min(m.goal, m.prog + n); changed = true;
+    if (m.prog >= m.goal) {
+      showToast('✅ Mission: ' + m.text + '  +' + m.reward + ' XP', 220);
+      const rew = m.reward;
+      profile.missions[i] = newMission(profile.missions);
+      awardXp(rew);   // awardXp salvează + reîmprospătează UI + verifică deblocări
+    }
+  }
+  if (changed) { saveProfile(); renderMissions(); }
+}
+function renderMissions() {
+  const box = document.getElementById('missions'); if (!box) return;
+  box.innerHTML = '';
+  for (const m of (profile.missions || [])) {
+    const done = m.prog >= m.goal;
+    const chip = document.createElement('div'); chip.className = 'mchip' + (done ? ' done' : '');
+    chip.innerHTML = '<span class="mtxt">' + (done ? '✅ ' : '🎯 ') + m.text + '</span>' +
+      '<span class="mprog">' + Math.min(m.prog, m.goal) + '/' + m.goal + ' · +' + m.reward + ' XP</span>';
+    box.appendChild(chip);
+  }
 }
 
 let selectedWeaponId = 0;
@@ -654,7 +745,7 @@ function popBalloon() {
   for (let i = 0; i < 22; i++) { const a = Math.random() * 6.28, s = rand(1, 4); state.particles.push({ x: b.x, y: b.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: 1, color: ['#ffd700','#ff5fa2','#5fc8ff','#7affb0'][randInt(0, 3)] }); }
   state.balloon = null; state.balloonCool = 300; sfxBounce();
   const localTurn = (botPlayer < 0 || state.turn !== botPlayer) && (!mpActive || state.turn === localPlayer);
-  if (localTurn) { awardXp(15); showToast('🎈 +15 XP — balloon popped!', 120); }
+  if (localTurn) { awardXp(15); showToast('🎈 +15 XP — balloon popped!', 120); missionEvent('balloon'); }
 }
 function drawBalloon() {
   const b = state.balloon; if (!b) return;
@@ -697,7 +788,16 @@ function init(keepScores) {
   // MP: worldRng e setat o dată la startul meciului (stream continuu, sincron pe ambele telefoane) — nu-l reseta.
   // DAILY: aceeași lume pentru toți, seedată după data zilei. Altfel — aleatoriu.
   if (!mpActive) worldRng = dailyMode ? mulberry32(dailySeedNum()) : Math.random;
-  const biome = BIOMES[wrandInt(0, BIOMES.length - 1)];                 // PLANȘA: alege temă + relief + vreme + ambient
+  // PLANȘA: online/daily = orice biom pe seed (identic pe ambele); single-player = doar biome
+  // a căror vreme e deblocată (R3) — cât ai doar banană, doar planșe SENINE.
+  let biome;
+  if (mpActive || dailyMode) {
+    biome = BIOMES[wrandInt(0, BIOMES.length - 1)];
+  } else {
+    const allow = allowedWeatherIds();
+    const pool = BIOMES.filter(b => allow.indexOf(b.weather) >= 0);
+    biome = pool[wrandInt(0, (pool.length || 1) - 1)] || BIOMES[0];
+  }
   const weather = WEATHERS.find(w => w.id === biome.weather) || WEATHERS[0];
   applyTheme(themeByName(biome.theme));
   const buildings = genSkyline(biome.terrain);
@@ -789,7 +889,7 @@ function fire() {
   state.volleyActive = true;
   state.volleyResolved = false;
   sfxThrow();
-  if (!botFiring && !remoteFiring) { awardXp(4); bumpStreak(); } // M4: XP/streak DOAR pentru loviturile omului local (nu bot/adversar)
+  if (!botFiring && !remoteFiring) { bumpStreak(); missionEvent('shot'); } // M4: doar omul local; XP-ul vine din victorii+misiuni, nu din tras (anti-farm)
   if (mpActive) mpSeq++; // H2: index de tură monoton, identic pe ambele telefoane
 }
 
@@ -949,12 +1049,20 @@ function endRound() {
     const winner = alive[0];
     scores[winner]++;
     const who = (botPlayer === winner) ? 'Bot' : `Player ${winner + 1}`;
+    // a câștigat partea LOCALĂ (omul)? vs bot: oricine != bot; online: localPlayer; 2P local: oricine
+    const localWon = (botPlayer >= 0) ? (winner !== botPlayer) : (mpActive ? (winner === localPlayer) : true);
     if (scores[winner] >= MATCH_TARGET) {        // best-of: meci câștigat
       state.matchOver = true;
       state.overMsg = `🏆 ${who} wins the MATCH ${scores[0]}–${scores[1]}!`;
+      if (localWon) {
+        profile.aim = (profile.aim || 0) + 2; saveProfile();   // R1: +2 puncte de traiectorie la meci câștigat
+        showToast('🎯 +2 trajectory points!', 200);
+        missionEvent('matchWin');
+      }
     } else {
       state.overMsg = `${who} wins the round  (${scores[0]}–${scores[1]})`;
     }
+    if (localWon) { missionEvent('roundWin'); if (state.weather && state.weather.id === 'wind') missionEvent('windWin'); }
     awardXp(50 + 25); // kill + win
     sfxWin();
   } else {
@@ -1190,14 +1298,14 @@ function botThink() {
 }
 
 function botPickWeapon() {
-  // Botul nu folosește niciodată o armă sinucigașă pe vremea curentă (altfel pe Arșiță banana putrezește
-  // și nu ajunge la inamic → stall). Ușurința vine din ZGOMOTUL de țintire, nu din arme proaste.
+  // R3: botul folosește DOAR arme deblocate (același tier ca jucătorul) și nu o armă sinucigașă pe vremea curentă.
+  const pool = WEAPONS.filter(isUnlocked);
   if (botDiff === 'greu') {
-    const good = WEAPONS.filter(w => !weaponWeatherStatus(w).bad);
-    selectedWeaponId = (good.length ? good[randInt(0, good.length - 1)] : WEAPONS[2]).id;
+    const good = pool.filter(w => !weaponWeatherStatus(w).bad);
+    selectedWeaponId = (good.length ? good[randInt(0, good.length - 1)] : pool[pool.length - 1]).id;
   } else {
-    // ușor/mediu: banană dacă e ok; altfel Bilă Grea (metal — imună la vânt/grindină/arșiță)
-    selectedWeaponId = weaponWeatherStatus(WEAPONS[0]).bad ? 2 : 0;
+    if (!weaponWeatherStatus(WEAPONS[0]).bad) { selectedWeaponId = 0; }   // banana e ok → banana
+    else { const safe = pool.filter(w => !weaponWeatherStatus(w).bad); selectedWeaponId = (safe.length ? safe[safe.length - 1] : pool[pool.length - 1]).id; }
   }
   renderWeaponBar(); updateHint();
 }
@@ -1289,40 +1397,30 @@ function drawGorilla(g, idx) {
   }
 }
 
-let previewMode = 1;
-let previewReveal = 0;          // câte puncte din traseu sunt dezvăluite (animație de trasare)
-let previewSig = '';            // semnătura parametrilor; la schimbare → re-trasează de la zero
-const REVEAL_STEP = 6;          // puncte adăugate / frame (~2 dots, fiindcă desenăm din 3 în 3)
+let previewMode = 1;            // 0 = OFF, 1 = ON (arată punctele de aim CÂȘTIGATE)
+const PREVIEW_SPACING = 8;      // un punct de aim la fiecare 8 pași de traiectorie
+// R1: preview-ul de traiectorie se CÂȘTIGĂ — arată exact profile.aim puncte (start 0, +2 / meci câștigat).
 function drawTrajectoryPreview() {
   if (state.volleyActive || state.roundOver) return;
-  const full = aim != null || previewMode === 2; // cât tragi cu degetul → preview COMPLET
-  if (!full && previewMode === 0) return;
+  if (previewMode === 0) return;                 // OFF
+  const aimDots = profile.aim | 0;
+  if (aimDots <= 0) return;                       // încă n-a câștigat puncte de traseu → fără ajutor (skill pur)
   const traj = computeTrajectory();
   if (!traj) return;
   const pts = traj.pts;
-  const shortMode = !full && previewMode === 1;
-  let limit = shortMode ? Math.min(pts.length, Math.floor(pts.length * 0.18) + 8) : pts.length;
-
-  // Trasare GRADUALĂ: doar în preview Complet idle (nu cât tragi cu degetul — atunci vrei feedback instant).
-  const animate = full && !aim;
-  const sig = [document.getElementById('angle').value, document.getElementById('velocity').value,
-    selectedWeaponId, Math.round(state.wind * 10), state.turn, previewMode].join('|');
-  if (animate) {
-    if (sig !== previewSig) { previewSig = sig; previewReveal = 0; }     // parametrii s-au schimbat → reia
-    else previewReveal = Math.min(limit, previewReveal + REVEAL_STEP);   // crește treptat
-  } else { previewSig = sig; previewReveal = limit; }                    // instant (drag sau mod scurt)
-  const drawn = Math.min(limit, previewReveal);
-  const complete = drawn >= limit;
-
+  const maxDots = Math.floor(pts.length / PREVIEW_SPACING);
+  const dots = Math.min(maxDots, aimDots);
+  const limit = dots * PREVIEW_SPACING;
   ctx.save();
-  for (let i = 0; i < drawn; i += 3) {
+  for (let i = 0; i < limit; i += PREVIEW_SPACING) {
     const p = pts[i], frac = i / Math.max(1, pts.length);
-    ctx.globalAlpha = shortMode ? Math.max(0.12, 0.75 - (i / limit) * 0.6) : Math.max(0.18, 0.6 - frac * 0.35);
+    ctx.globalAlpha = Math.max(0.2, 0.72 - frac * 0.4);
     ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x, p.y, 2.3, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
-  if (full && complete && traj.landing) {
+  // marker de aterizare DOAR dacă aim-ul ajunge până la capăt (recompensă pentru mulți câștigați)
+  if (dots >= maxDots && traj.landing) {
     const l = traj.landing;
     const color = l.kind === 'enemy' ? '#33ff66' : (l.kind === 'self' ? '#ff4444' : (l.kind === 'air' ? '#ffcf33' : (l.kind === 'rot' ? '#8a5a2a' : '#ffffff')));
     ctx.strokeStyle = color; ctx.lineWidth = 2;
@@ -1506,9 +1604,10 @@ function refreshProgressUI() {
   document.getElementById('xpfill').style.width = clamp(pct, 0, 100) + '%';
   document.getElementById('xptext').textContent = (profile.xp - cur) + ' / ' + (nxt - cur) + ' XP';
   const locked = WEAPONS.filter(w => w.rank > r).sort((a, b) => a.rank - b.rank)[0];
-  document.getElementById('nextunlock').innerHTML = locked
-    ? `Next: <b>${locked.icon} ${locked.name}</b> la Rank ${locked.rank}`
-    : 'All weapons unlocked! 🏆';
+  const aimTxt = ' &nbsp;·&nbsp; 🎯 <b>' + (profile.aim | 0) + '</b> aim';
+  document.getElementById('nextunlock').innerHTML = (locked
+    ? `Next: <b>${locked.icon} ${locked.name}</b> at Rank ${locked.rank}`
+    : 'All weapons unlocked! 🏆') + aimTxt;
 }
 
 // status armă-vs-vreme curentă: {bad, label, color}
@@ -1565,9 +1664,9 @@ function nudge(id, d) {
 
 document.getElementById('fire').addEventListener('click', fire);
 document.getElementById('reset').addEventListener('click', () => { if (mpActive) mpLeave(); init(false); });
-const previewLabels = ['🎯 Trajectory: OFF', '🎯 Trajectory: Short', '🎯 Trajectory: Full'];
+const previewLabels = ['🎯 Aim: OFF', '🎯 Aim: ON'];
 function updatePreviewBtn() { document.getElementById('preview').textContent = previewLabels[previewMode]; }
-document.getElementById('preview').addEventListener('click', () => { previewMode = (previewMode + 1) % 3; updatePreviewBtn(); });
+document.getElementById('preview').addEventListener('click', () => { previewMode = (previewMode + 1) % 2; updatePreviewBtn(); });
 
 // deblochează AudioContext la primul gest (iOS/Chrome)
 ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, audioOn));
@@ -1650,7 +1749,7 @@ document.addEventListener('keydown', (e) => {
     case 'ArrowLeft': if (!inField) { e.preventDefault(); nudge('velocity', -big); } break;
     case '[': cycleWeapon(-1); break;
     case ']': cycleWeapon(1); break;
-    case 'p': case 'P': previewMode = (previewMode + 1) % 3; updatePreviewBtn(); break;
+    case 'p': case 'P': previewMode = (previewMode + 1) % 2; updatePreviewBtn(); break;
   }
 });
 ['angle', 'velocity'].forEach(id => document.getElementById(id).addEventListener('focus', e => e.target.select()));
@@ -1695,11 +1794,12 @@ function syncSliders() {
 function buildWGrid() {
   const grid = document.getElementById('wgrid'); grid.innerHTML = '';
   for (const w of WEAPONS) {
-    const st = weaponWeatherStatus(w);
+    const unlocked = isUnlocked(w);
+    const st = unlocked ? weaponWeatherStatus(w) : { bad: false };
     const tile = document.createElement('div');
-    tile.className = 'wtile' + (w.id === selectedWeaponId ? ' sel' : '') + (st.bad ? ' weak' : '');
-    tile.innerHTML = `<span class="ic">${w.icon}</span><span class="nm">${w.name}</span>`;
-    tile.addEventListener('click', () => {
+    tile.className = 'wtile' + (w.id === selectedWeaponId ? ' sel' : '') + (st.bad ? ' weak' : '') + (unlocked ? '' : ' locked');
+    tile.innerHTML = `<span class="ic">${w.icon}</span><span class="nm">${unlocked ? w.name : '🔒 Rk ' + w.rank}</span>`;
+    if (unlocked) tile.addEventListener('click', () => {
       selectedWeaponId = w.id;
       if (!(botPlayer >= 0 && state.turn === botPlayer)) humanWeaponId = w.id;
       renderWeaponBar(); updateHint(); closeW(); sfxClick();
@@ -1806,7 +1906,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v16';
+const APP_VERSION = 'v17';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)
@@ -1823,6 +1923,7 @@ updateStreakUI();
 refreshProgressUI();
 renderWeaponBar();
 updateHint();
+initMissions();
 init(false);
 loop();
 

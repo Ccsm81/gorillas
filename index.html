@@ -244,7 +244,7 @@
   .mchip.done { border-color: #5fbf6a; opacity: 0.65; }
   .mchip .mtxt { color: #ddd; font-size: 12px; }
   .mchip .mprog { color: #ffd700; font-size: 10px; }
-  body.touch #missions { position: fixed; top: 42px; right: 4px; left: auto; max-width: 42vw; z-index: 24;
+  body.touch #missions { position: fixed; top: 58px; right: 4px; left: auto; max-width: 42vw; z-index: 24; pointer-events: none;
     flex-direction: column; gap: 3px; justify-content: flex-start; align-items: flex-end; }
   body.touch .mchip { padding: 2px 6px; background: rgba(20,8,40,0.55); }
   body.touch .mchip .mtxt { font-size: 10px; } body.touch .mchip .mprog { font-size: 9px; }
@@ -301,7 +301,7 @@
   <button id="daily" class="sec">📅 Daily Challenge</button>
   <button id="share" class="sec">📸 Share</button>
   <button id="sound" class="sec">🔊 Sound</button>
-  <button id="preview" class="sec">🎯 Trajectory: Short</button>
+  <button id="preview" class="sec">🎯 Aim: ON</button>
   <button id="reset" class="sec">Restart match</button>
 </div>
 <div id="rankbar">
@@ -464,7 +464,7 @@ function loadProfile() {
   try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY));
     if (p && Number.isFinite(p.xp) && p.xp >= 0) {
       p.xp = Math.min(p.xp, 1e12);
-      if (!Number.isFinite(p.aim) || p.aim < 0) p.aim = 0;     // puncte de traiectorie (R1) câștigate la meciuri
+      if (!Number.isFinite(p.aim) || p.aim < 0) p.aim = 0; else p.aim = Math.min(p.aim, 1e6);  // R1: puncte de traiectorie (cu plafon)
       if (!Array.isArray(p.missions)) p.missions = [];          // misiuni active (R4)
       return p;
     } } catch (e) {}  // L5: respinge XP corupt/Infinity
@@ -529,8 +529,10 @@ const MISSION_POOL = [
   { key:'rounds6', text:'Win 6 rounds',           goal:6, reward:30, ev:'roundWin' },
 ];
 function newMission(exclude) {
-  const taken = new Set((exclude || []).map(m => m.key));
-  const avail = MISSION_POOL.filter(t => !taken.has(t.key));
+  const takenKey = new Set((exclude || []).map(m => m.key));
+  const takenEv = new Set((exclude || []).map(m => m.ev));         // R-audit L5: nu pune 2 misiuni pe același eveniment
+  let avail = MISSION_POOL.filter(t => !takenKey.has(t.key) && !takenEv.has(t.ev));
+  if (!avail.length) avail = MISSION_POOL.filter(t => !takenKey.has(t.key));   // fallback: doar pe cheie
   const src = avail.length ? avail : MISSION_POOL;
   const t = src[randInt(0, src.length - 1)];
   return { key: t.key, text: t.text, goal: t.goal, reward: t.reward, ev: t.ev, prog: 0 };
@@ -619,7 +621,7 @@ function mpApplyShot(a, v, w, seq, cs) {
     if (localPlayer === 0) { if (window.__mpSend) window.__mpSend(mpSnapshot()); }  // host = sursă de adevăr
     else if (window.__mpSend) window.__mpSend({ t: 'sync', req: true });            // guest cere snapshot
   }
-  document.getElementById('angle').value = clamp(a, 0, 180);
+  document.getElementById('angle').value = clamp(a, 0, 90);
   document.getElementById('velocity').value = clamp(v, 8, 200);
   selectedWeaponId = w;
   renderWeaponBar(); updateHint();   // M2: sincronizează iconița armei adversarului
@@ -838,7 +840,7 @@ function init(keepScores) {
   aim = null;
   if (weather.id === 'hail') for (let i = 0; i < 80; i++) state.hail.push({ x: rand(0, W), y: rand(0, H), s: rand(7, 11) });
   seedAmbient(biome.ambient);
-  if (botPlayer >= 0 && state.turn !== botPlayer) selectedWeaponId = humanWeaponId;
+  if ((botPlayer >= 0 && state.turn !== botPlayer) || (mpActive && state.turn === localPlayer)) selectedWeaponId = humanWeaponId;
   updateUI();
   renderWeaponBar(); // reflectă slăbiciunile pe vremea curentă
   updateHint();
@@ -876,6 +878,8 @@ function fire() {
   if (isNaN(angle) || isNaN(velocity) || velocity <= 0) return;
   const g = state.gorillas[state.turn];
   if (!g.alive) return;
+  // R-audit L4: lovitura LOCALĂ a omului nu poate folosi o armă nedeblocată (loviturile remote/bot rămân ce-au ales ei)
+  if (!botFiring && !remoteFiring && !isUnlocked(WEAPONS[selectedWeaponId])) selectedWeaponId = isUnlocked(WEAPONS[humanWeaponId]) ? humanWeaponId : 0;
   const wpn = WEAPONS[selectedWeaponId];
   const dir = state.turn === 0 ? 1 : -1;
   const rad = angle * Math.PI / 180;
@@ -1063,7 +1067,7 @@ function endRound() {
       state.overMsg = `${who} wins the round  (${scores[0]}–${scores[1]})`;
     }
     if (localWon) { missionEvent('roundWin'); if (state.weather && state.weather.id === 'wind') missionEvent('windWin'); }
-    awardXp(50 + 25); // kill + win
+    awardXp(localWon ? 75 : 10); // R-audit L1: XP plin doar la victorie locală; înfrângere = consolare mică
     sfxWin();
   } else {
     state.overMsg = 'Draw — both down!';
@@ -1266,7 +1270,7 @@ function nextTurn() {
   }
   state.turn = 1 - state.turn;
   state.wind = wrand(-state.weather.windMax, state.weather.windMax);
-  if (botPlayer >= 0 && state.turn !== botPlayer) { selectedWeaponId = humanWeaponId; renderWeaponBar(); updateHint(); }
+  if ((botPlayer >= 0 && state.turn !== botPlayer) || (mpActive && state.turn === localPlayer)) { selectedWeaponId = humanWeaponId; renderWeaponBar(); updateHint(); }
   updateUI();
   maybeBotTurn();
 }
@@ -1598,12 +1602,19 @@ function loop() { step(); render(); syncSliders(); requestAnimationFrame(loop); 
 // ════════════════════════ UI WIRING ════════════════════════
 function refreshProgressUI() {
   const r = currentRank();
-  const cur = xpForRank(r), nxt = xpForRank(r + 1);
-  const pct = Math.round(((profile.xp - cur) / (nxt - cur)) * 100);
-  document.getElementById('rkLabel').textContent = 'Rank ' + r;
-  document.getElementById('xpfill').style.width = clamp(pct, 0, 100) + '%';
-  document.getElementById('xptext').textContent = (profile.xp - cur) + ' / ' + (nxt - cur) + ' XP';
+  const MAXR = Math.max.apply(null, WEAPONS.map(w => w.rank));   // R-audit L2: rank max real (toate armele)
   const locked = WEAPONS.filter(w => w.rank > r).sort((a, b) => a.rank - b.rank)[0];
+  if (!locked) {                                                  // toate deblocate → bară MAX, fără rank-uri sintetice
+    document.getElementById('rkLabel').textContent = 'Rank MAX';
+    document.getElementById('xpfill').style.width = '100%';
+    document.getElementById('xptext').textContent = 'MAX';
+  } else {
+    const cur = xpForRank(r), nxt = xpForRank(r + 1);
+    const pct = Math.round(((profile.xp - cur) / (nxt - cur)) * 100);
+    document.getElementById('rkLabel').textContent = 'Rank ' + r;
+    document.getElementById('xpfill').style.width = clamp(pct, 0, 100) + '%';
+    document.getElementById('xptext').textContent = (profile.xp - cur) + ' / ' + (nxt - cur) + ' XP';
+  }
   const aimTxt = ' &nbsp;·&nbsp; 🎯 <b>' + (profile.aim | 0) + '</b> aim';
   document.getElementById('nextunlock').innerHTML = (locked
     ? `Next: <b>${locked.icon} ${locked.name}</b> at Rank ${locked.rank}`
@@ -1749,7 +1760,7 @@ document.addEventListener('keydown', (e) => {
     case 'ArrowLeft': if (!inField) { e.preventDefault(); nudge('velocity', -big); } break;
     case '[': cycleWeapon(-1); break;
     case ']': cycleWeapon(1); break;
-    case 'p': case 'P': previewMode = (previewMode + 1) % 2; updatePreviewBtn(); break;
+    case 'p': case 'P': if (!inField) { previewMode = (previewMode + 1) % 2; updatePreviewBtn(); } break;
   }
 });
 ['angle', 'velocity'].forEach(id => document.getElementById(id).addEventListener('focus', e => e.target.select()));
@@ -1906,7 +1917,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v17';
+const APP_VERSION = 'v18';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

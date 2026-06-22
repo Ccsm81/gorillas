@@ -571,46 +571,23 @@ window.mpApplySync = mpApplySync;
 window.mpOnReconnect = mpOnReconnect;
 
 function genSkyline(terrain) {
-  terrain = terrain || 'city';
+  // toate biomele folosesc aceeași siluetă CURATĂ de oraș (clădiri drepte + ferestre) — coerent;
+  // varietatea vine din temă (culori/cer) + ambient (zăpadă/scântei/bule/stele), NU din forme procedurale.
   const buildings = [];
   const groundY = H - 20;
-  // relief de munți/vulcan: 2 vârfuri FIXE (deterministe via worldRng) → siluetă de munte
-  let peaks = null;
-  if (terrain === 'rock') peaks = [
-    { cx: wrandInt(W * 0.18, W * 0.40), ph: wrandInt(230, 330) },
-    { cx: wrandInt(W * 0.60, W * 0.84), ph: wrandInt(210, 320) },
-  ];
   let x = 0;
   while (x < W) {
-    let w = wrandInt(terrain === 'rock' ? 46 : 70, terrain === 'rock' ? 80 : 115);
+    let w = wrandInt(70, 115);
     if (x + w > W) w = W - x;
-    if (w < 36) { if (buildings.length) buildings[buildings.length - 1].w += w; break; }
-    const cx = x + w / 2;
-    let h;
-    if (terrain === 'rock') {
-      h = 70 + Math.max.apply(null, peaks.map(p => p.ph * Math.exp(-Math.pow(cx - p.cx, 2) / (2 * 150 * 150))));
-      h = Math.round(h) + wrandInt(-12, 12);
-    } else if (terrain === 'mesa') {
-      h = wrandInt(200, 300);
-    } else if (terrain === 'tower') {
-      h = wrandInt(150, 340);
-    } else {
-      h = wrandInt(130, 350);
-    }
-    h = Math.max(60, h);
+    if (w < 40) { if (buildings.length) buildings[buildings.length - 1].w += w; break; }
+    const h = wrandInt(130, 350);
     const y = groundY - h;
     const color = PALETTE.buildings[wrandInt(0, PALETTE.buildings.length - 1)];
     const windows = [];
-    if (terrain === 'city') {
-      const winW = 9, winH = 11, gx = 6, gy = 7;
-      for (let wy = y + 18; wy < groundY - 18; wy += winH + gy)
-        for (let wx = x + 9; wx < x + w - 14; wx += winW + gx)
-          windows.push({ x: wx, y: wy, lit: worldRng() < 0.5 });
-    } else if (terrain === 'tower') {
-      // puncte luminoase rare (coral / bomboane)
-      for (let wy = y + 18; wy < groundY - 14; wy += 26)
-        if (worldRng() < 0.6) windows.push({ x: cx - 4 + wrandInt(-6, 6), y: wy, lit: true, dot: true });
-    }
+    const winW = 9, winH = 11, gx = 6, gy = 7;
+    for (let wy = y + 18; wy < groundY - 18; wy += winH + gy)
+      for (let wx = x + 9; wx < x + w - 14; wx += winW + gx)
+        windows.push({ x: wx, y: wy, lit: worldRng() < 0.5 });
     buildings.push({ x, y, w, h, color, windows });
     x += w;
   }
@@ -1272,33 +1249,12 @@ function drawSkyline() {
   sctx.clearRect(0, 0, W, H);
   sctx.fillStyle = PALETTE.ground;
   sctx.fillRect(0, H - 20, W, 20);
-  const terr = (state && state.terrain) || 'city';
   for (const b of state.buildings) {
     sctx.fillStyle = b.color;
-    if (terr === 'tower') {                          // turn cu vârf rotund (coral / bomboane)
-      const r = b.w / 2;
-      sctx.fillRect(b.x, b.y + r, b.w, b.h - r);
-      sctx.beginPath(); sctx.arc(b.x + r, b.y + r, r, Math.PI, 0); sctx.fill();
-    } else {
-      sctx.fillRect(b.x, b.y, b.w, b.h);
-      sctx.fillStyle = 'rgba(255,255,255,0.06)'; sctx.fillRect(b.x, b.y, b.w, 2);
-    }
-    if (terr === 'rock') {                           // vârf triunghiular + glazură (zăpadă albă / lavă portocalie)
-      const capH = Math.min(34, b.h * 0.4);
-      sctx.fillStyle = b.color;
-      sctx.beginPath(); sctx.moveTo(b.x, b.y + capH); sctx.lineTo(b.x + b.w / 2, b.y - capH * 0.5); sctx.lineTo(b.x + b.w, b.y + capH); sctx.closePath(); sctx.fill();
-      sctx.fillStyle = PALETTE.name === 'Vulcan' ? 'rgba(255,110,40,0.92)' : 'rgba(255,255,255,0.92)';
-      sctx.beginPath(); sctx.moveTo(b.x + b.w * 0.34, b.y + capH * 0.12); sctx.lineTo(b.x + b.w / 2, b.y - capH * 0.5); sctx.lineTo(b.x + b.w * 0.66, b.y + capH * 0.12); sctx.closePath(); sctx.fill();
-    }
-    for (const win of b.windows) {
-      if (win.dot) { sctx.fillStyle = PALETTE.windowOn; sctx.beginPath(); sctx.arc(win.x + 4, win.y, 3, 0, 6.28); sctx.fill(); }
-      else { sctx.fillStyle = win.lit ? PALETTE.windowOn : PALETTE.windowOff; sctx.fillRect(win.x, win.y, 9, 11); }
-    }
-    if (terr === 'mesa') {                           // cratere/pete pe platou (lună)
-      sctx.fillStyle = 'rgba(0,0,0,0.18)';
-      sctx.beginPath(); sctx.ellipse(b.x + b.w * 0.35, b.y + 14, 6, 3, 0, 0, 6.28); sctx.fill();
-      sctx.beginPath(); sctx.ellipse(b.x + b.w * 0.68, b.y + 26, 4, 2.4, 0, 0, 6.28); sctx.fill();
-    }
+    sctx.fillRect(b.x, b.y, b.w, b.h);
+    sctx.fillStyle = 'rgba(255,255,255,0.06)';
+    sctx.fillRect(b.x, b.y, b.w, 2);
+    for (const win of b.windows) { sctx.fillStyle = win.lit ? PALETTE.windowOn : PALETTE.windowOff; sctx.fillRect(win.x, win.y, 9, 11); }
   }
   sctx.save();
   sctx.globalCompositeOperation = 'destination-out';
@@ -1850,7 +1806,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v15';
+const APP_VERSION = 'v16';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

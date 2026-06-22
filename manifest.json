@@ -1,7 +1,7 @@
 {
   "name": "Gorillas Artillery",
   "short_name": "Gorillas",
-  "description": "Joc de artilerie cu gorile, banane, vreme strategică și bot AI.",
+  "description": "Artillery game with gorillas, bananas, strategic weather and an AI bot.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

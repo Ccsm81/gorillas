@@ -234,6 +234,16 @@
   #lcodebig { font-size: 34px; letter-spacing: 8px; color: #ffd700; font-weight: bold; margin: 8px 0; }
   #lhint { color: #cbb8e0; font-size: 12px; margin-bottom: 8px; }
   #lclose { background: linear-gradient(180deg,#5a3e6e,#3a2850) !important; }
+
+  /* ── iOS install hint (Add to Home Screen) ── */
+  #iosInstall { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 72;
+    display: none; align-items: center; gap: 10px; max-width: 94vw;
+    background: rgba(20,8,40,0.97); border: 1px solid #ffd700; border-radius: 12px;
+    padding: 10px 12px; font-size: 13px; line-height: 1.35; color: #fff; box-shadow: 0 6px 22px rgba(0,0,0,0.6); }
+  #iosInstall.show { display: flex; }
+  #iosInstall b { color: #ffd700; }
+  #iosInstall svg { vertical-align: middle; }
+  #iosInstall button { background: #5a3e6e; border: none; color: #fff; border-radius: 8px; padding: 7px 11px; font-size: 13px; cursor: pointer; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -259,6 +269,12 @@
   <div id="lshare" class="hidden"><div id="lcodebig"></div><div id="lhint">Send the code (or link) to the other phone and both press.</div><button id="lcopy">Copy link</button></div>
   <button id="lclose" class="sec">Close</button>
 </div></div>
+
+<!-- iOS: hint to install as an app (Add to Home Screen) -->
+<div id="iosInstall">
+  <span>📲 To install on your iPhone: tap <svg viewBox="0 0 50 50" width="17" height="17"><path d="M25 5 L25 32 M16 14 L25 5 L34 14" fill="none" stroke="#6cf" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 23 L9 23 L9 45 L41 45 L41 23 L36 23" fill="none" stroke="#6cf" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> <b>Share</b>, then <b>Add to Home Screen</b></span>
+  <button id="iosInstallClose">Got it</button>
+</div>
 
 <div id="status">—</div>
 <div id="panel">
@@ -1834,7 +1850,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v14';
+const APP_VERSION = 'v15';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)
@@ -1853,6 +1869,18 @@ renderWeaponBar();
 updateHint();
 init(false);
 loop();
+
+// iOS: arată hint-ul „Add to Home Screen" doar în Safari, dacă nu e deja instalat (o singură dată)
+(function () {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  let dismissed = false; try { dismissed = localStorage.getItem('gorillas_ios_install') === '1'; } catch (e) {}
+  if (!isIOS || standalone || dismissed) return;
+  const el = document.getElementById('iosInstall'), btn = document.getElementById('iosInstallClose');
+  if (!el) return;
+  setTimeout(() => el.classList.add('show'), 1600);
+  if (btn) btn.addEventListener('click', () => { el.classList.remove('show'); try { localStorage.setItem('gorillas_ios_install', '1'); } catch (e) {} });
+})();
 </script>
 
 <!-- ── MODUL MULTIPLAYER (Trystero / WebRTC; signaling pe relee nostr publice + TURN self-hosted pe AWS) ── -->

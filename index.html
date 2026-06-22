@@ -163,7 +163,7 @@
   body.touch { gap: 0; padding: 0; justify-content: center; }
   body.touch h1, body.touch #status, body.touch #rankbar, body.touch #weapons, body.touch #hint,
   body.touch #lblAngle, body.touch #lblVel, body.touch #fire { display: none; }
-  body.touch canvas { width: min(calc(100vw - 4px), calc(100dvh * 2.037)); max-width: none; border-width: 0; border-radius: 0; }
+  body.touch canvas { width: min(100vw, calc(100dvh * 2.037)); height: min(calc(100vw / 2.037), 100dvh); max-width: none; border-width: 0; border-radius: 0; }
 
   /* bară utilitare sus (refolosește #panel) */
   body.touch #panel {
@@ -176,9 +176,9 @@
 
   /* slidere verticale */
   body.touch .vslider { display: block; position: fixed; top: 50%; transform: translateY(-50%);
-    left: 4px; width: 58px; height: min(66dvh, 380px); z-index: 25;
-    background: rgba(10,5,22,0.55); border: 1px solid rgba(255,255,255,0.18); border-radius: 14px; touch-action: none; }
-  body.touch .vslider.right { left: auto; right: 4px; }
+    left: 2px; width: 38px; height: min(48dvh, 250px); z-index: 25;
+    background: rgba(10,5,22,0.34); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; touch-action: none; }
+  body.touch .vslider.right { left: auto; right: 2px; }
   .vslider .vfill { position: absolute; left: 3px; right: 3px; bottom: 3px; border-radius: 11px;
     background: linear-gradient(0deg,#1f7fb8,#7fd0ff); opacity: 0.5; height: 50%; }
   .vslider.right .vfill { background: linear-gradient(0deg,#b85a1f,#ffb56b); }
@@ -241,38 +241,38 @@
 <canvas id="c" width="1100" height="540"></canvas>
 
 <!-- ── Controale mobil (apar doar pe touch) ── -->
-<div id="angleSlider" class="vslider"><div class="vfill"></div><div class="vthumb"></div><div class="vlabel">UNGHI<br><b>45°</b></div></div>
-<div id="velSlider" class="vslider right"><div class="vfill"></div><div class="vthumb"></div><div class="vlabel">VITEZĂ<br><b>80</b></div></div>
+<div id="angleSlider" class="vslider"><div class="vfill"></div><div class="vthumb"></div><div class="vlabel">ANGLE<br><b>45°</b></div></div>
+<div id="velSlider" class="vslider right"><div class="vfill"></div><div class="vthumb"></div><div class="vlabel">POWER<br><b>80</b></div></div>
 <button id="wbtn" class="fab">🍌</button>
 <button id="fireFab" class="fab">💥</button>
 <button id="shareFab" class="fab small">📸</button>
 <button id="fsbtn" class="fab small">⛶</button>
-<div id="woverlay" class="hidden"><div id="wsheet"><div id="wgridTitle">Alege arma</div><div id="wgrid"></div><button id="wclose">Închide</button></div></div>
+<div id="woverlay" class="hidden"><div id="wsheet"><div id="wgridTitle">Choose weapon</div><div id="wgrid"></div><button id="wclose">Close</button></div></div>
 
 <!-- ── Lobby online (2 telefoane) ── -->
 <div id="lobby" class="hidden"><div id="lsheet">
-  <div id="ltitle">🌐 Joacă pe 2 telefoane</div>
-  <button id="lcreate">Creează cameră</button>
-  <div id="ldiv">— sau —</div>
-  <div id="ljoinrow"><input id="lcode" type="text" placeholder="cod cameră" autocapitalize="characters" maxlength="6"><button id="ljoin">Intră</button></div>
+  <div id="ltitle">🌐 Play on 2 phones</div>
+  <button id="lcreate">Create room</button>
+  <div id="ldiv">— or —</div>
+  <div id="ljoinrow"><input id="lcode" type="text" placeholder="room code" autocapitalize="characters" maxlength="6"><button id="ljoin">Join</button></div>
   <div id="lstatus"></div>
-  <div id="lshare" class="hidden"><div id="lcodebig"></div><div id="lhint">Trimite codul (sau link-ul) celuilalt telefon și apăsați amândoi.</div><button id="lcopy">Copiază link-ul</button></div>
-  <button id="lclose" class="sec">Închide</button>
+  <div id="lshare" class="hidden"><div id="lcodebig"></div><div id="lhint">Send the code (or link) to the other phone and both press.</div><button id="lcopy">Copy link</button></div>
+  <button id="lclose" class="sec">Close</button>
 </div></div>
 
 <div id="status">—</div>
 <div id="panel">
-  <span id="turnLabel">Jucător 1</span>
-  <label id="lblAngle">Unghi: <input id="angle" type="number" min="0" max="90" value="45"></label>
-  <label id="lblVel">Viteză: <input id="velocity" type="number" min="10" max="200" value="80"></label>
-  <button id="fire">Aruncă</button>
-  <button id="mode" class="sec">👥 2 Jucători</button>
+  <span id="turnLabel">Player 1</span>
+  <label id="lblAngle">Angle: <input id="angle" type="number" min="0" max="90" value="45"></label>
+  <label id="lblVel">Power: <input id="velocity" type="number" min="10" max="200" value="80"></label>
+  <button id="fire">Throw</button>
+  <button id="mode" class="sec">👥 2 Players</button>
   <button id="online" class="sec">🌐 Online</button>
-  <button id="daily" class="sec">📅 Provocarea zilei</button>
+  <button id="daily" class="sec">📅 Daily Challenge</button>
   <button id="share" class="sec">📸 Share</button>
-  <button id="sound" class="sec">🔊 Sunet</button>
-  <button id="preview" class="sec">🎯 Traseu: Scurt</button>
-  <button id="reset" class="sec">Restart meci</button>
+  <button id="sound" class="sec">🔊 Sound</button>
+  <button id="preview" class="sec">🎯 Trajectory: Short</button>
+  <button id="reset" class="sec">Restart match</button>
 </div>
 <div id="rankbar">
   <span class="rk" id="rkLabel">Rank 0</span>
@@ -370,22 +370,22 @@ const boom = ['#ff3833','#ff8c33','#ffd633','#ffffff'];
 // effect: normal | air | heavy | drill | napalm | bouncer | roller
 // mass: light|medium|heavy  ·  organic: banană (putrezește pe arșiță)  ·  metal: imun la grindină/arșiță
 const WEAPONS = [
-  { id:0,  name:'Banană',     icon:'🍌', rank:0,  color:'#ffe048', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'normal', crater:22, kill:28, desc:'Clasica. Echilibrată — vântul o împinge normal.' },
-  { id:1,  name:'MIRV Triplă',icon:'🔱', rank:1,  color:'#ffd84a', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:3, childCrater:16, childKill:24, desc:'Se desparte în 3 la apex. Acoperire largă.' },
-  { id:2,  name:'Bilă Grea',  icon:'🎳', rank:2,  color:'#cfcfcf', round:true,  size:1.3, wind:0.0, grav:1.35,spd:0.95,mass:'heavy', metal:true,    effect:'heavy', crater:34, kill:40, desc:'IMUNĂ la vânt și vreme. Cade greu, crater mare.' },
-  { id:3,  name:'Cluster',    icon:'💥', rank:3,  color:'#ffcf33', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:5, childCrater:12, childKill:18, desc:'5 fragmente la apex. Ploaie de explozii mici.' },
-  { id:4,  name:'Banană Mare',icon:'🟡', rank:4,  color:'#ffe048', round:false, size:1.8, wind:1.0, grav:1.1, spd:0.9, mass:'light', organic:true,  effect:'normal', crater:50, kill:60, desc:'Lentă dar devastatoare. Crater uriaș.' },
-  { id:5,  name:'Burghiu',    icon:'⚙️', rank:5,  color:'#8fd0ff', round:true,  size:0.9, wind:0.7, grav:1.0, spd:1.05,mass:'heavy', metal:true,    effect:'drill', drill:75, crater:40, kill:44, desc:'Sapă prin clădiri înainte să explodeze adânc.' },
-  { id:6,  name:'Napalm',     icon:'🔥', rank:6,  color:'#ff5522', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'medium', fire:true,    effect:'napalm', crater:16, kill:34, desc:'Împrăștie foc pe orizontală. Grindina îl stinge.' },
-  { id:7,  name:'Săltăreață', icon:'🟢', rank:7,  color:'#33ff99', round:true,  size:1.0, wind:0.9, grav:1.0, spd:1.0, mass:'medium', effect:'bouncer', bounces:3, crater:18, kill:26, desc:'Ricoșează de 3 ori înainte să explodeze.' },
-  { id:8,  name:'Dinamită',   icon:'🧨', rank:8,  color:'#ff3344', round:true,  size:1.0, wind:0.8, grav:1.0, spd:1.0, mass:'medium', effect:'roller', roll:90, crater:30, kill:34, desc:'Se rostogolește pe orizontală și lovește tot ce atinge, apoi explodează.' },
-  { id:9,  name:'Sniper',     icon:'🎯', rank:9,  color:'#ffffff', round:false, size:0.8, wind:0.3, grav:0.8, spd:1.45,mass:'light', metal:true,    effect:'normal', crater:12, kill:20, desc:'Rapidă, plată, metal. Ignoră vânt și vreme — skill pur.' },
-  { id:10, name:'Grindină',   icon:'🌨️', rank:10, color:'#cfeeff', round:false, size:0.9, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:8, childCrater:9, childKill:14, desc:'8 schije la apex. Saturație totală.' },
-  { id:11, name:'NUKE',       icon:'☢️', rank:12, color:'#ffee55', round:true,  size:2.2, wind:1.0, grav:1.0, spd:0.85,mass:'heavy', metal:true,    effect:'normal', crater:90, kill:95, desc:'Sfârșitul lumii. Atenție la propriul recul.' },
-  // ── arme noi spectaculoase (v13) ──
-  { id:12, name:'Meteoriți',   icon:'☄️', rank:11, color:'#ff7a33', round:false, size:1.1, wind:1.0, grav:1.05,spd:1.0, mass:'light', fire:true,  effect:'air', splitN:6, childCrater:15, childKill:22, desc:'Se sparge într-o ploaie de meteoriți de foc.' },
-  { id:13, name:'Fulger',      icon:'⚡', rank:11, color:'#bfe6ff', round:false, size:0.8, wind:0.2, grav:0.85,spd:1.4, mass:'light', metal:true, effect:'lightning', crater:26, kill:46, desc:'Cheamă un trăsnet din cer la impact. Fulgerător.' },
-  { id:14, name:'Gaură Neagră',icon:'🌀', rank:12, color:'#b06aff', round:true,  size:1.2, wind:0.6, grav:1.0, spd:0.9, mass:'heavy', metal:true, effect:'blackhole', crater:40, kill:80, desc:'Implozie care înghite tot în jur. Rază uriașă.' },
+  { id:0,  name:'Banana',     icon:'🍌', rank:0,  color:'#ffe048', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'normal', crater:22, kill:28, desc:'The classic. Balanced — wind pushes it normally.' },
+  { id:1,  name:'Triple MIRV',icon:'🔱', rank:1,  color:'#ffd84a', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:3, childCrater:16, childKill:24, desc:'Splits into 3 at the apex. Wide coverage.' },
+  { id:2,  name:'Heavy Ball', icon:'🎳', rank:2,  color:'#cfcfcf', round:true,  size:1.3, wind:0.0, grav:1.35,spd:0.95,mass:'heavy', metal:true,    effect:'heavy', crater:34, kill:40, desc:'IMMUNE to wind and weather. Drops hard, big crater.' },
+  { id:3,  name:'Cluster',    icon:'💥', rank:3,  color:'#ffcf33', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:5, childCrater:12, childKill:18, desc:'5 fragments at the apex. A rain of small blasts.' },
+  { id:4,  name:'Big Banana', icon:'🟡', rank:4,  color:'#ffe048', round:false, size:1.8, wind:1.0, grav:1.1, spd:0.9, mass:'light', organic:true,  effect:'normal', crater:50, kill:60, desc:'Slow but devastating. Huge crater.' },
+  { id:5,  name:'Drill',      icon:'⚙️', rank:5,  color:'#8fd0ff', round:true,  size:0.9, wind:0.7, grav:1.0, spd:1.05,mass:'heavy', metal:true,    effect:'drill', drill:75, crater:40, kill:44, desc:'Digs through buildings before exploding deep.' },
+  { id:6,  name:'Napalm',     icon:'🔥', rank:6,  color:'#ff5522', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'medium', fire:true,    effect:'napalm', crater:16, kill:34, desc:'Spreads fire sideways. Hail puts it out.' },
+  { id:7,  name:'Bouncer',    icon:'🟢', rank:7,  color:'#33ff99', round:true,  size:1.0, wind:0.9, grav:1.0, spd:1.0, mass:'medium', effect:'bouncer', bounces:3, crater:18, kill:26, desc:'Bounces 3 times before exploding.' },
+  { id:8,  name:'Dynamite',   icon:'🧨', rank:8,  color:'#ff3344', round:true,  size:1.0, wind:0.8, grav:1.0, spd:1.0, mass:'medium', effect:'roller', roll:90, crater:30, kill:34, desc:'Rolls along the ground and hits anything it touches, then explodes.' },
+  { id:9,  name:'Sniper',     icon:'🎯', rank:9,  color:'#ffffff', round:false, size:0.8, wind:0.3, grav:0.8, spd:1.45,mass:'light', metal:true,    effect:'normal', crater:12, kill:20, desc:'Fast, flat, metal. Ignores wind and weather — pure skill.' },
+  { id:10, name:'Hailstorm',  icon:'🌨️', rank:10, color:'#cfeeff', round:false, size:0.9, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:8, childCrater:9, childKill:14, desc:'8 shards at the apex. Total saturation.' },
+  { id:11, name:'NUKE',       icon:'☢️', rank:12, color:'#ffee55', round:true,  size:2.2, wind:1.0, grav:1.0, spd:0.85,mass:'heavy', metal:true,    effect:'normal', crater:90, kill:95, desc:'The end of the world. Mind your own recoil.' },
+  // ── new spectacular weapons (v13) ──
+  { id:12, name:'Meteors',    icon:'☄️', rank:11, color:'#ff7a33', round:false, size:1.1, wind:1.0, grav:1.05,spd:1.0, mass:'light', fire:true,  effect:'air', splitN:6, childCrater:15, childKill:22, desc:'Bursts into a shower of fiery meteors.' },
+  { id:13, name:'Lightning',  icon:'⚡', rank:11, color:'#bfe6ff', round:false, size:0.8, wind:0.2, grav:0.85,spd:1.4, mass:'light', metal:true, effect:'lightning', crater:26, kill:46, desc:'Calls a lightning strike on impact. Blazing fast.' },
+  { id:14, name:'Black Hole', icon:'🌀', rank:12, color:'#b06aff', round:true,  size:1.2, wind:0.6, grav:1.0, spd:0.9, mass:'heavy', metal:true, effect:'blackhole', crater:40, kill:80, desc:'Implosion that swallows everything around. Huge radius.' },
 ];
 
 // ════════════════════════ WEATHER (strat strategic — predictibil) ════════════════════════
@@ -393,10 +393,10 @@ const WEAPONS = [
 const HEAT_ROT_DIST = 640;   // distanță de zbor după care o banană putrezește pe arșiță
 const HAIL_GRAV = 1.7;       // multiplicator de gravitație pe proiectile ușoare în grindină
 const WEATHERS = [
-  { id:'calm', name:'Senin',         icon:'🌤️', windMax:7,  theme:'Apus',      effect:'Fără efecte — orice armă merge.' },
-  { id:'wind', name:'Vânt puternic', icon:'💨', windMax:14, theme:'Furtună',   effect:'Vântul deviază mult proiectilele ușoare. Cele grele și Sniper rezistă.' },
-  { id:'hail', name:'Grindină',      icon:'🌨️', windMax:8,  theme:'Noapte',    effect:'Grindina apasă proiectilele ușoare → cad mai scurt. Folosește arme grele/metal.' },
-  { id:'heat', name:'Arșiță',        icon:'☀️', windMax:5,  theme:'Zi senină', effect:'Bananele se înnegresc și putrezesc pe distanțe lungi. Folosește metal/Sniper.' },
+  { id:'calm', name:'Clear',       icon:'🌤️', windMax:7,  theme:'Apus',      effect:'No effects — any weapon works.' },
+  { id:'wind', name:'Strong Wind', icon:'💨', windMax:14, theme:'Furtună',   effect:'Wind pushes light projectiles hard. Heavy ones and the Sniper resist.' },
+  { id:'hail', name:'Hail',        icon:'🌨️', windMax:8,  theme:'Noapte',    effect:'Hail weighs down light projectiles → they fall short. Use heavy/metal weapons.' },
+  { id:'heat', name:'Heat',        icon:'☀️', windMax:5,  theme:'Zi senină', effect:'Bananas blacken and rot over long distances. Use metal/Sniper.' },
 ];
 function themeByName(n) { return THEMES.find(t => t.name === n) || THEMES[0]; }
 // e proiectilul afectat de grindină / arșiță?
@@ -406,14 +406,14 @@ function rotsInHeat(w) { return state.weather && state.weather.id === 'heat' && 
 // ════════════════════════ BIOMES (PLANȘE: temă + relief + vreme + ambient) ════════════════════════
 // terrain: city | rock | tower | mesa   ·   ambient: none | snow | ember | bubble | star
 const BIOMES = [
-  { name:'Oraș Apus',          theme:'Apus',       terrain:'city',  weather:'calm', ambient:'none'   },
-  { name:'Oraș Noapte',        theme:'Noapte',     terrain:'city',  weather:'hail', ambient:'none'   },
-  { name:'Furtună în oraș',    theme:'Furtună',    terrain:'city',  weather:'wind', ambient:'none'   },
-  { name:'Munți de iarnă',     theme:'Iarnă',      terrain:'rock',  weather:'hail', ambient:'snow'   },
-  { name:'Vulcanul',           theme:'Vulcan',     terrain:'rock',  weather:'heat', ambient:'ember'  },
-  { name:'Lună',               theme:'Spațiu',     terrain:'mesa',  weather:'calm', ambient:'star'   },
-  { name:'Adâncuri',           theme:'Subacvatic', terrain:'tower', weather:'calm', ambient:'bubble' },
-  { name:'Tărâm de bomboane',  theme:'Bomboane',   terrain:'tower', weather:'wind', ambient:'none'   },
+  { name:'Sunset City',     theme:'Apus',       terrain:'city',  weather:'calm', ambient:'none'   },
+  { name:'Night City',      theme:'Noapte',     terrain:'city',  weather:'hail', ambient:'none'   },
+  { name:'Stormy City',     theme:'Furtună',    terrain:'city',  weather:'wind', ambient:'none'   },
+  { name:'Winter Mountains',theme:'Iarnă',      terrain:'rock',  weather:'hail', ambient:'snow'   },
+  { name:'The Volcano',     theme:'Vulcan',     terrain:'rock',  weather:'heat', ambient:'ember'  },
+  { name:'The Moon',        theme:'Spațiu',     terrain:'mesa',  weather:'calm', ambient:'star'   },
+  { name:'The Depths',      theme:'Subacvatic', terrain:'tower', weather:'calm', ambient:'bubble' },
+  { name:'Candy Land',      theme:'Bomboane',   terrain:'tower', weather:'wind', ambient:'none'   },
 ];
 
 // ════════════════════════ PROGRESSION (localStorage) ════════════════════════
@@ -433,7 +433,7 @@ function bumpStreak() {
   profile.streak = (profile.lastPlayed === ymd(y)) ? (profile.streak || 0) + 1 : 1;
   profile.lastPlayed = t;
   saveProfile();
-  showToast('🔥 Streak ' + profile.streak + (profile.streak === 1 ? ' zi!' : ' zile!'), 180);
+  showToast('🔥 Streak ' + profile.streak + (profile.streak === 1 ? ' day!' : ' days!'), 180);
   updateStreakUI();
 }
 function updateStreakUI() {
@@ -457,7 +457,7 @@ function awardXp(n) {
   saveProfile();
   if (after > before) {
     const newly = WEAPONS.filter(w => w.rank > before && w.rank <= after);
-    if (newly.length) showToast('🔓 Deblocat: ' + newly.map(w => w.icon + ' ' + w.name).join(', '), 220);
+    if (newly.length) showToast('🔓 Unlocked: ' + newly.map(w => w.icon + ' ' + w.name).join(', '), 220);
     else showToast('⬆️ Rank ' + after + '!', 150);
   }
   refreshProgressUI();
@@ -494,7 +494,7 @@ function mpStart(code, localIdx) {
   if (typeof closeLobby === 'function') closeLobby();
   scores = [0, 0];
   init(false);
-  showToast((localIdx === 0 ? '🌐 Ești Jucător 1' : '🌐 Ești Jucător 2') + ' · cod ' + code, 240);
+  showToast((localIdx === 0 ? '🌐 You are Player 1' : '🌐 You are Player 2') + ' · code ' + code, 240);
 }
 // Aplică lovitura primită de la adversar (exact aceleași 3 numere → aceeași simulare)
 function mpApplyShot(a, v, w, seq, cs) {
@@ -545,7 +545,7 @@ function mpApplySync(s) {
   state.craters = (s.craters || []).map(c => ({ x: c.x, y: c.y, r: c.r }));
   state.shots = []; state.volleyActive = false; state.roundOver = false;
   mpSeq = s.seq | 0; skylineDirty = true;
-  updateUI(); showToast('🔄 Resincronizat cu adversarul', 120);
+  updateUI(); showToast('🔄 Resynced with opponent', 120);
 }
 function mpOnReconnect() { if (mpActive && localPlayer === 0 && window.__mpSend) window.__mpSend(mpSnapshot()); } // host re-emite adevărul
 function mpLeave() { mpActive = false; localPlayer = 0; if (window.__mpDisconnect) window.__mpDisconnect(); }
@@ -661,7 +661,7 @@ function popBalloon() {
   for (let i = 0; i < 22; i++) { const a = Math.random() * 6.28, s = rand(1, 4); state.particles.push({ x: b.x, y: b.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: 1, color: ['#ffd700','#ff5fa2','#5fc8ff','#7affb0'][randInt(0, 3)] }); }
   state.balloon = null; state.balloonCool = 300; sfxBounce();
   const localTurn = (botPlayer < 0 || state.turn !== botPlayer) && (!mpActive || state.turn === localPlayer);
-  if (localTurn) { awardXp(15); showToast('🎈 +15 XP — balon spart!', 120); }
+  if (localTurn) { awardXp(15); showToast('🎈 +15 XP — balloon popped!', 120); }
 }
 function drawBalloon() {
   const b = state.balloon; if (!b) return;
@@ -708,8 +708,12 @@ function init(keepScores) {
   const weather = WEATHERS.find(w => w.id === biome.weather) || WEATHERS[0];
   applyTheme(themeByName(biome.theme));
   const buildings = genSkyline(biome.terrain);
-  const b1 = buildings[1] || buildings[0];
-  const b2 = buildings[buildings.length - 2] || buildings[buildings.length - 1];
+  // gorile INSET de margini (≥13% / ≤87% din lățime) ca sliderele mobile de pe laturi să nu le acopere niciodată
+  const loX = W * 0.13, hiX = W * 0.87;
+  let b1 = buildings.find(b => b.x + b.w / 2 >= loX) || buildings[1] || buildings[0];
+  let b2 = buildings[buildings.length - 1];
+  for (let i = buildings.length - 1; i >= 0; i--) if (buildings[i].x + buildings[i].w / 2 <= hiX) { b2 = buildings[i]; break; }
+  if (b1 === b2 || b1.x > b2.x) { b1 = buildings[1] || buildings[0]; b2 = buildings[buildings.length - 2] || buildings[buildings.length - 1]; }
   state = {
     buildings,
     craters: [],
@@ -751,14 +755,14 @@ function init(keepScores) {
 function updateUI() {
   const t = state.turn;
   const tl = document.getElementById('turnLabel');
-  if (mpActive) tl.textContent = (t === localPlayer ? '➤ Rândul TĂU' : 'Rândul adversarului') + `  |  ${scores[0]} : ${scores[1]}`;
-  else tl.textContent = `Jucător ${t + 1}  |  ${scores[0]} : ${scores[1]}`;
+  if (mpActive) tl.textContent = (t === localPlayer ? '➤ YOUR turn' : "Opponent's turn") + `  |  ${scores[0]} : ${scores[1]}`;
+  else tl.textContent = `Player ${t + 1}  |  ${scores[0]} : ${scores[1]}`;
   tl.style.color = t === 0 ? '#6cf' : '#f96';
   const w = state.wind;
   const arrow = w > 0 ? '→' : '←';
   const wx = state.weather;
   document.getElementById('status').innerHTML =
-    `<b style="color:#ffd27a">${state.biomeName || ''}</b> &nbsp;·&nbsp; Vânt: <b>${arrow}</b> ${Math.abs(w).toFixed(1)} &nbsp;·&nbsp; <b style="color:#7fd0ff">${wx.icon} ${wx.name}</b> — <span style="color:#cbb8e0">${wx.effect}</span>`;
+    `<b style="color:#ffd27a">${state.biomeName || ''}</b> &nbsp;·&nbsp; Wind: <b>${arrow}</b> ${Math.abs(w).toFixed(1)} &nbsp;·&nbsp; <b style="color:#7fd0ff">${wx.icon} ${wx.name}</b> — <span style="color:#cbb8e0">${wx.effect}</span>`;
 }
 
 function showToast(msg, t) { if (state) state.toast = { msg, t }; }
@@ -951,17 +955,17 @@ function endRound() {
   if (alive.length === 1) {
     const winner = alive[0];
     scores[winner]++;
-    const who = (botPlayer === winner) ? 'Bot' : `Jucător ${winner + 1}`;
+    const who = (botPlayer === winner) ? 'Bot' : `Player ${winner + 1}`;
     if (scores[winner] >= MATCH_TARGET) {        // best-of: meci câștigat
       state.matchOver = true;
-      state.overMsg = `🏆 ${who} câștigă MECIUL ${scores[0]}–${scores[1]}!`;
+      state.overMsg = `🏆 ${who} wins the MATCH ${scores[0]}–${scores[1]}!`;
     } else {
-      state.overMsg = `${who} câștigă runda  (${scores[0]}–${scores[1]})`;
+      state.overMsg = `${who} wins the round  (${scores[0]}–${scores[1]})`;
     }
     awardXp(50 + 25); // kill + win
     sfxWin();
   } else {
-    state.overMsg = 'Egalitate — amândoi căzuți!';
+    state.overMsg = 'Draw — both down!';
     awardXp(20);
   }
   state.roundOver = true;
@@ -1154,7 +1158,7 @@ function nextTurn() {
   // plasă anti-stall: rundă prea lungă (ex: ambii ratează pe vreme grea) → egalitate, rundă nouă (vreme nouă)
   state.turnsThisRound++;
   if (state.turnsThisRound > 60) {
-    state.overMsg = 'Egalitate — rundă prea lungă!';
+    state.overMsg = 'Draw — round too long!';
     state.roundOver = true; state.overTimer = 0;
     awardXp(10); updateUI();
     return;
@@ -1352,7 +1356,7 @@ function drawTrajectoryPreview() {
     ctx.strokeStyle = color; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(l.x, l.y, 9, 0, Math.PI * 2); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(l.x - 13, l.y); ctx.lineTo(l.x + 13, l.y); ctx.moveTo(l.x, l.y - 13); ctx.lineTo(l.x, l.y + 13); ctx.stroke();
-    let lbl = traj.splits ? 'se desparte aici' : (l.kind === 'rot' ? '🥀 putrezește aici!' : '');
+    let lbl = traj.splits ? 'splits here' : (l.kind === 'rot' ? '🥀 rots here!' : '');
     if (lbl) { ctx.fillStyle = color; ctx.font = 'bold 12px Georgia'; ctx.textAlign = 'center'; ctx.fillText(lbl, l.x, l.y - 18); ctx.textAlign = 'start'; }
   }
   ctx.restore();
@@ -1452,7 +1456,7 @@ function drawRoundOverBanner() {
   ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.strokeRect(W / 2 - 230, H / 2 - 36, 460, 72);
   ctx.fillStyle = '#ffd700'; ctx.font = 'bold 22px Georgia'; ctx.textAlign = 'center';
   ctx.fillText(state.overMsg, W / 2, H / 2 - 4);
-  ctx.font = '14px Georgia'; ctx.fillStyle = '#fff'; ctx.fillText('Rundă nouă în curând…', W / 2, H / 2 + 22);
+  ctx.font = '14px Georgia'; ctx.fillStyle = '#fff'; ctx.fillText('New round soon…', W / 2, H / 2 + 22);
   ctx.textAlign = 'start';
 }
 
@@ -1531,19 +1535,19 @@ function refreshProgressUI() {
   document.getElementById('xptext').textContent = (profile.xp - cur) + ' / ' + (nxt - cur) + ' XP';
   const locked = WEAPONS.filter(w => w.rank > r).sort((a, b) => a.rank - b.rank)[0];
   document.getElementById('nextunlock').innerHTML = locked
-    ? `Următorul: <b>${locked.icon} ${locked.name}</b> la Rank ${locked.rank}`
-    : 'Toate armele deblocate! 🏆';
+    ? `Next: <b>${locked.icon} ${locked.name}</b> la Rank ${locked.rank}`
+    : 'All weapons unlocked! 🏆';
 }
 
 // status armă-vs-vreme curentă: {bad, label, color}
 function weaponWeatherStatus(w) {
   if (!state || !state.weather) return { bad: false };
   const id = state.weather.id;
-  if (id === 'hail' && hitByHail(w)) return { bad: true, label: 'slabă pe grindină — cade scurt', color: '#ff7777' };
-  if (id === 'heat' && rotsInHeat(w)) return { bad: true, label: 'se strică pe arșiță la distanță', color: '#ff9944' };
-  if (id === 'wind' && w.wind >= 0.8) return { bad: true, label: 'deviată tare de vânt', color: '#ffcc55' };
-  if (id === 'hail' && w.fire) return { bad: true, label: 'focul e stins de grindină', color: '#ff7777' };
-  if (w.metal || (id === 'hail' && w.mass === 'heavy')) return { bad: false, label: 'rezistentă la vremea asta ✓', color: '#66ff99' };
+  if (id === 'hail' && hitByHail(w)) return { bad: true, label: 'weak in hail — falls short', color: '#ff7777' };
+  if (id === 'heat' && rotsInHeat(w)) return { bad: true, label: 'rots in heat over distance', color: '#ff9944' };
+  if (id === 'wind' && w.wind >= 0.8) return { bad: true, label: 'pushed hard by wind', color: '#ffcc55' };
+  if (id === 'hail' && w.fire) return { bad: true, label: 'fire is doused by hail', color: '#ff7777' };
+  if (w.metal || (id === 'hail' && w.mass === 'heavy')) return { bad: false, label: 'resists this weather ✓', color: '#66ff99' };
   return { bad: false, label: '', color: '#66ff99' };
 }
 
@@ -1568,7 +1572,7 @@ function updateHint() {
   const st = weaponWeatherStatus(w);
   const tag = st.label ? ` &nbsp;·&nbsp; <b style="color:${st.color}">${st.label}</b>` : '';
   document.getElementById('hint').innerHTML =
-    `Armă: <b>${w.icon} ${w.name}</b> — ${w.desc}${tag}<br><b>Trage cu degetul</b> de la gorilă în direcția de aruncare (lung = putere), eliberezi = arunci. Sau: ↑↓ unghi, ←→ viteză, Enter, [ ] armă, P preview.`;
+    `Weapon: <b>${w.icon} ${w.name}</b> — ${w.desc}${tag}<br><b>Drag</b> from the gorilla in the throw direction (longer = more power), release to throw. Or: ↑↓ angle, ←→ power, Enter, [ ] weapon, P preview.`;
 }
 
 function cycleWeapon(d) {
@@ -1589,7 +1593,7 @@ function nudge(id, d) {
 
 document.getElementById('fire').addEventListener('click', fire);
 document.getElementById('reset').addEventListener('click', () => { if (mpActive) mpLeave(); init(false); });
-const previewLabels = ['🎯 Traseu: OFF', '🎯 Traseu: Scurt', '🎯 Traseu: Complet'];
+const previewLabels = ['🎯 Trajectory: OFF', '🎯 Trajectory: Short', '🎯 Trajectory: Full'];
 function updatePreviewBtn() { document.getElementById('preview').textContent = previewLabels[previewMode]; }
 document.getElementById('preview').addEventListener('click', () => { previewMode = (previewMode + 1) % 3; updatePreviewBtn(); });
 
@@ -1640,10 +1644,10 @@ canvas.addEventListener('pointercancel', () => { aim = null; });
 
 // buton mod: 2 Jucători → Bot Ușor → Bot Mediu → Bot Greu (restart curat la schimbare)
 const MODES = [
-  { bp: -1, d: 'mediu', label: '👥 2 Jucători' },
-  { bp: 1, d: 'usor',  label: '🤖 Bot: Ușor' },
-  { bp: 1, d: 'mediu', label: '🤖 Bot: Mediu' },
-  { bp: 1, d: 'greu',  label: '🤖 Bot: Greu' },
+  { bp: -1, d: 'mediu', label: '👥 2 Players' },
+  { bp: 1, d: 'usor',  label: '🤖 Bot: Easy' },
+  { bp: 1, d: 'mediu', label: '🤖 Bot: Medium' },
+  { bp: 1, d: 'greu',  label: '🤖 Bot: Hard' },
 ];
 let modeIdx = 0;
 document.getElementById('mode').addEventListener('click', () => {
@@ -1659,7 +1663,7 @@ document.getElementById('mode').addEventListener('click', () => {
 document.getElementById('sound').addEventListener('click', () => {
   soundOn = !soundOn;
   if (soundOn) { audioOn(); sfxClick(); }
-  document.getElementById('sound').textContent = soundOn ? '🔊 Sunet' : '🔇 Mut';
+  document.getElementById('sound').textContent = soundOn ? '🔊 Sound' : '🔇 Muted';
 });
 
 document.addEventListener('keydown', (e) => {
@@ -1744,7 +1748,7 @@ function toggleFS() {
   const req = el.requestFullscreen || el.webkitRequestFullscreen;
   const exit = document.exitFullscreen || document.webkitExitFullscreen;
   const isFS = document.fullscreenElement || document.webkitFullscreenElement;
-  if (!isFS) { if (req) req.call(el); else showToast('iPhone: Share → „Add to Home Screen" pt fullscreen', 240); }
+  if (!isFS) { if (req) req.call(el); else showToast('iPhone: Share → "Add to Home Screen" for fullscreen', 240); }
   else if (exit) exit.call(document);
 }
 document.getElementById('fsbtn').addEventListener('click', () => { audioOn(); toggleFS(); });
@@ -1770,7 +1774,7 @@ document.getElementById('shareFab').addEventListener('click', () => { audioOn();
 // DAILY CHALLENGE toggle
 function updateDailyBtn() {
   const b = document.getElementById('daily');
-  b.textContent = dailyMode ? '📅 Daily: PORNIT' : '📅 Provocarea zilei';
+  b.textContent = dailyMode ? '📅 Daily: ON' : '📅 Daily Challenge';
   b.style.borderColor = dailyMode ? '#ffd700' : '';
 }
 document.getElementById('daily').addEventListener('click', () => {
@@ -1778,7 +1782,7 @@ document.getElementById('daily').addEventListener('click', () => {
   audioOn(); sfxClick();
   dailyMode = !dailyMode;
   updateDailyBtn();
-  if (dailyMode) showToast('📅 Provocarea zilei — aceeași hartă pentru toți azi!', 200);
+  if (dailyMode) showToast('📅 Daily Challenge — same map for everyone today!', 200);
   init(false);
 });
 
@@ -1791,8 +1795,8 @@ let mpCode = '';
 function whenMpReady(cb, tries) {
   tries = tries || 0;
   if (window.__mpConnect) { cb(); return; }
-  if (tries > 40) { lobbyStatus('❌ Nu s-a încărcat modulul online. Verifică internetul și reîncarcă pagina.'); return; }
-  lobbyStatus('Se încarcă modulul online… (' + tries + ')');
+  if (tries > 40) { lobbyStatus('❌ Online module failed to load. Check your internet and reload the page.'); return; }
+  lobbyStatus('Loading online module… (' + tries + ')');
   setTimeout(() => whenMpReady(cb, tries + 1), 200);
 }
 function hostRoom() {
@@ -1800,15 +1804,15 @@ function hostRoom() {
   mpCode = randCode();
   document.getElementById('lcodebig').textContent = mpCode;
   document.getElementById('lshare').classList.remove('hidden');
-  lobbyStatus('Pregătesc camera…');
-  whenMpReady(() => { lobbyStatus('🟢 Cameră ' + mpCode + ' — aștept adversarul…'); window.__mpConnect(mpCode, true); });
+  lobbyStatus('Preparing room…');
+  whenMpReady(() => { lobbyStatus('🟢 Room ' + mpCode + ' — waiting for opponent…'); window.__mpConnect(mpCode, true); });
 }
 function joinRoomUI(code) {
   code = (code || '').toUpperCase().trim();
-  if (code.length < 3) { lobbyStatus('Introdu codul camerei.'); return; }
+  if (code.length < 3) { lobbyStatus('Enter the room code.'); return; }
   if (mpActive) mpLeave();
   mpCode = code;
-  whenMpReady(() => { lobbyStatus('🔌 Mă conectez la ' + code + '…'); window.__mpConnect(code, false); });
+  whenMpReady(() => { lobbyStatus('🔌 Connecting to ' + code + '…'); window.__mpConnect(code, false); });
 }
 document.getElementById('online').addEventListener('click', () => { openLobby(); }); // deschide MEREU dialogul
 document.getElementById('lcreate').addEventListener('click', hostRoom);
@@ -1816,13 +1820,13 @@ document.getElementById('ljoin').addEventListener('click', () => joinRoomUI(docu
 document.getElementById('lclose').addEventListener('click', closeLobby);
 document.getElementById('lcopy').addEventListener('click', () => {
   const link = 'https://ccsm81.github.io/gorillas/?r=' + mpCode;
-  if (navigator.share) navigator.share({ text: 'Hai la Gorillas! ' + link }).catch(() => {});
+  if (navigator.share) navigator.share({ text: 'Come play Gorillas! ' + link }).catch(() => {});
   else if (navigator.clipboard) { navigator.clipboard.writeText(link); lobbyStatus('Link copiat!'); }
 });
 // hook-uri apelate de modulul Trystero
 window.__mpStatus = lobbyStatus;
-window.__mpConnected = () => { lobbyStatus('Conectat! Începem…'); };
-window.__mpPeerLeft = () => { showToast('⚠️ Adversar deconectat — aștept reconectarea…', 250); }; // NU închidem meciul: dacă revine (blip de rețea), continuăm de unde am rămas
+window.__mpConnected = () => { lobbyStatus('Connected! Starting…'); };
+window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waiting to reconnect…', 250); }; // NU închidem meciul: dacă revine (blip de rețea), continuăm de unde am rămas
 // auto-join din link ?r=COD
 (function () {
   const m = location.search.match(/[?&]r=([A-Za-z0-9]+)/);
@@ -1830,7 +1834,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Adversar deconectat — aștept 
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v13';
+const APP_VERSION = 'v14';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)
@@ -1881,10 +1885,10 @@ loop();
   let room = null, sendShot = null, sendPing = null, sendSync = null, isHost = false, started = false, joinTimer = null, hbTimer = null, peerHere = false;
 
   window.__mpConnect = function (code, asHost) {
-    if (!joinRoom) { st('❌ Modul online neîncărcat' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')); return; }
+    if (!joinRoom) { st('❌ Online module not loaded' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')); return; }
     try {
       isHost = asHost; started = false; peerHere = false;
-      st('📡 Conectare la relee…');
+      st('📡 Connecting to relays…');
       if (room) { try { room.leave(); } catch (e) {} room = null; }   // L6: părăsește room-ul anterior (fără handler-e/room orfane la re-host)
       room = joinRoom(config, 'gorillas-' + code);
       const [sShot, gShot] = room.makeAction('shot');
@@ -1899,7 +1903,7 @@ loop();
       gShot((d) => { if (window.mpApplyShot) window.mpApplyShot(d.a, d.v, d.w, d.seq, d.cs); });
       gSync((d) => { if (window.mpApplySync) window.mpApplySync(d); });   // C2/M1: resincronizare
       gPing(() => {}); // heartbeat de la adversar — ține conexiunea vie (NAT mobil închide la inactivitate)
-      st(asHost ? '🟢 În cameră ' + code + ' — aștept adversarul…' : '🔌 În cameră ' + code + ' — caut host-ul…');
+      st(asHost ? '🟢 In room ' + code + ' — waiting for opponent…' : '🔌 In room ' + code + ' — looking for host…');
       // HEARTBEAT: trimit un semnal la 6s ca să nu se închidă conexiunea în pauzele dintre ture
       clearInterval(hbTimer);
       hbTimer = setInterval(() => { try { if (sendPing && peerHere) sendPing(1); } catch (e) {} }, 6000);
@@ -1907,20 +1911,20 @@ loop();
       room.onPeerJoin(() => {
         clearTimeout(joinTimer);
         peerHere = true;
-        if (started) { if (window.__mpStatus) window.__mpStatus('🔄 Reconectat!'); if (window.mpOnReconnect) window.mpOnReconnect(); return; } // M1: la reconectare host-ul re-emite snapshot autoritar
+        if (started) { if (window.__mpStatus) window.__mpStatus('🔄 Reconnected!'); if (window.mpOnReconnect) window.mpOnReconnect(); return; } // M1: la reconectare host-ul re-emite snapshot autoritar
         started = true;
-        st('✅ Adversar găsit! Pornesc…');
+        st('✅ Opponent found! Starting…');
         if (window.mpStart) window.mpStart(code, asHost ? 0 : 1);
       });
       room.onPeerLeave(() => { peerHere = false; if (window.__mpPeerLeft) window.__mpPeerLeft(); });
       clearTimeout(joinTimer);
-      joinTimer = setTimeout(() => { if (!started) st('⏳ Încă nu s-a conectat. Verifică: ACELAȘI cod pe ambele + internet bun. Mai aștept…'); }, 22000);
+      joinTimer = setTimeout(() => { if (!started) st('⏳ Not connected yet. Check: SAME code on both phones + good internet. Still waiting…'); }, 22000);
     } catch (e) {
-      st('❌ Eroare: ' + (e && e.message || e));
+      st('❌ Error: ' + (e && e.message || e));
     }
   };
   window.__mpDisconnect = function () { try { clearInterval(hbTimer); if (room) room.leave(); } catch (e) {} room = null; window.__mpSend = null; started = false; peerHere = false; };
-  st(joinRoom ? 'Modul online gata.' : ('❌ Modul online nu s-a încărcat' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')));
+  st(joinRoom ? 'Online module ready.' : ('❌ Online module did not load' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')));
 </script>
 </body>
 </html>

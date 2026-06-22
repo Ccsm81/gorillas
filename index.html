@@ -367,7 +367,7 @@ const WEAPONS = [
   { id:5,  name:'Burghiu',    icon:'⚙️', rank:5,  color:'#8fd0ff', round:true,  size:0.9, wind:0.7, grav:1.0, spd:1.05,mass:'heavy', metal:true,    effect:'drill', drill:75, crater:40, kill:44, desc:'Sapă prin clădiri înainte să explodeze adânc.' },
   { id:6,  name:'Napalm',     icon:'🔥', rank:6,  color:'#ff5522', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'medium', fire:true,    effect:'napalm', crater:16, kill:34, desc:'Împrăștie foc pe orizontală. Grindina îl stinge.' },
   { id:7,  name:'Săltăreață', icon:'🟢', rank:7,  color:'#33ff99', round:true,  size:1.0, wind:0.9, grav:1.0, spd:1.0, mass:'medium', effect:'bouncer', bounces:3, crater:18, kill:26, desc:'Ricoșează de 3 ori înainte să explodeze.' },
-  { id:8,  name:'Dinamită',   icon:'🧨', rank:8,  color:'#ff3344', round:true,  size:1.0, wind:0.8, grav:1.0, spd:1.0, mass:'medium', effect:'roller', roll:90, crater:30, kill:34, desc:'Se rostogolește pe orizontală, apoi sare în aer.' },
+  { id:8,  name:'Dinamită',   icon:'🧨', rank:8,  color:'#ff3344', round:true,  size:1.0, wind:0.8, grav:1.0, spd:1.0, mass:'medium', effect:'roller', roll:90, crater:30, kill:34, desc:'Se rostogolește pe orizontală și lovește tot ce atinge, apoi explodează.' },
   { id:9,  name:'Sniper',     icon:'🎯', rank:9,  color:'#ffffff', round:false, size:0.8, wind:0.3, grav:0.8, spd:1.45,mass:'light', metal:true,    effect:'normal', crater:12, kill:20, desc:'Rapidă, plată, metal. Ignoră vânt și vreme — skill pur.' },
   { id:10, name:'Grindină',   icon:'🌨️', rank:10, color:'#cfeeff', round:false, size:0.9, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:8, childCrater:9, childKill:14, desc:'8 schije la apex. Saturație totală.' },
   { id:11, name:'NUKE',       icon:'☢️', rank:12, color:'#ffee55', round:true,  size:2.2, wind:1.0, grav:1.0, spd:0.85,mass:'heavy', metal:true,    effect:'normal', crater:90, kill:95, desc:'Sfârșitul lumii. Atenție la propriul recul.' },
@@ -392,7 +392,8 @@ function rotsInHeat(w) { return state.weather && state.weather.id === 'heat' && 
 const PROFILE_KEY = 'gorillas_profile_v1';
 let profile = loadProfile();
 function loadProfile() {
-  try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY)); if (p && typeof p.xp === 'number') return p; } catch (e) {}
+  try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY));
+    if (p && Number.isFinite(p.xp) && p.xp >= 0) { p.xp = Math.min(p.xp, 1e12); return p; } } catch (e) {}  // L5: respinge XP corupt/Infinity
   return { xp: 0, streak: 0, lastPlayed: '' };
 }
 function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {} }
@@ -413,7 +414,10 @@ function updateStreakUI() {
 }
 // cumulative XP needed to REACH rank r:  T(r)=100r+20r(r-1)
 function xpForRank(r) { return 100 * r + 20 * r * (r - 1); }
-function rankFromXp(xp) { let r = 0; while (xp >= xpForRank(r + 1)) r++; return r; }
+function rankFromXp(xp) {   // L5: formă închisă (fără buclă care îngheață pe XP uriaș). T(r)=20r²+80r
+  if (!Number.isFinite(xp) || xp <= 0) return 0;
+  return Math.max(0, Math.floor((-80 + Math.sqrt(6400 + 80 * xp)) / 40));
+}
 function currentRank() { return rankFromXp(profile.xp); }
 // Feedback unanim adolescenți: deblocarea armelor la rank ucide descoperirea — toate disponibile în meci.
 // Rangul/XP rămân ca progres de prestigiu (viitor: skins/cosmetice).
@@ -450,6 +454,7 @@ let mpActive = false;      // suntem într-un meci online
 let localPlayer = 0;       // ce gorilă controlez eu (0 = host, 1 = guest)
 let mpSeed = 0;            // seed-ul comun al meciului (lumea e identică pe ambele telefoane)
 let remoteFiring = false;  // true cât aplic lovitura primită de la adversar
+let mpSeq = 0;             // index de tură monoton (anti-duplicat/replay + cheie de sincronizare)
 
 // Pornește un meci online: ambele telefoane folosesc ACELAȘI seed → lume identică.
 // hash determinist (FNV-1a) → seed comun derivat din CODUL camerei (ambele telefoane îl au, deci nu mai trebuie trimis)
@@ -464,16 +469,62 @@ function mpStart(code, localIdx) {
   showToast((localIdx === 0 ? '🌐 Ești Jucător 1' : '🌐 Ești Jucător 2') + ' · cod ' + code, 240);
 }
 // Aplică lovitura primită de la adversar (exact aceleași 3 numere → aceeași simulare)
-function mpApplyShot(a, v, w) {
-  if (!mpActive) return;
-  document.getElementById('angle').value = a;
-  document.getElementById('velocity').value = v;
+function mpApplyShot(a, v, w, seq, cs) {
+  if (!mpActive || !state) return;
+  // H2: shot-uri remote DOAR în tura adversarului, fără salvă/rundă în curs
+  if (state.turn === localPlayer || state.volleyActive || state.roundOver) return;
+  // H2: anti-duplicat/replay (ex: după reconectare) — ignoră index de tură neașteptat
+  if (typeof seq === 'number' && seq !== mpSeq) return;
+  // H1: validează payload-ul de la peer (singura graniță de încredere)
+  a = Number(a); v = Number(v); w = Number(w);
+  if (!isFinite(a) || !isFinite(v)) return;
+  if (!Number.isInteger(w) || w < 0 || w >= WEAPONS.length) return;
+  // C2: detectează desincronizarea de stare (checksum pre-lovitură)
+  if (typeof cs === 'number' && cs !== mpChecksum()) {
+    if (localPlayer === 0) { if (window.__mpSend) window.__mpSend(mpSnapshot()); }  // host = sursă de adevăr
+    else if (window.__mpSend) window.__mpSend({ t: 'sync', req: true });            // guest cere snapshot
+  }
+  document.getElementById('angle').value = clamp(a, 0, 180);
+  document.getElementById('velocity').value = clamp(v, 8, 200);
   selectedWeaponId = w;
+  renderWeaponBar(); updateHint();   // M2: sincronizează iconița armei adversarului
   remoteFiring = true; fire(); remoteFiring = false;
 }
+// C2: checksum determinist al stării partajate (detectează divergența între telefoane)
+function mpChecksum() {
+  if (!state) return 0;
+  let h = 2166136261 >>> 0;
+  const mix = (n) => { h ^= (n | 0); h = Math.imul(h, 16777619) >>> 0; };
+  mix(state.turn); mix(scores[0]); mix(scores[1]);
+  mix(Math.round(state.wind * 10)); mix(state.turnsThisRound || 0);
+  for (const g of state.gorillas) mix(g.alive ? 1 : 0);
+  mix(state.craters.length);
+  return h >>> 0;
+}
+// M1: snapshot autoritar (host) pentru resincronizare la divergență / reconectare
+function mpSnapshot() {
+  return { t: 'sync', seq: mpSeq, scores: scores.slice(), turn: state.turn, wind: state.wind,
+    turnsThisRound: state.turnsThisRound || 0, alive: state.gorillas.map(g => g.alive),
+    craters: state.craters.map(c => ({ x: Math.round(c.x), y: Math.round(c.y), r: Math.round(c.r) })) };
+}
+function mpApplySync(s) {
+  if (!mpActive || !state || !s) return;
+  if (s.req) { if (localPlayer === 0 && window.__mpSend) window.__mpSend(mpSnapshot()); return; } // host răspunde la cerere
+  if (localPlayer === 0) return;                       // host e sursa de adevăr, nu acceptă snapshot
+  scores = (s.scores || scores).slice();
+  state.turn = s.turn | 0; state.wind = +s.wind || 0; state.turnsThisRound = s.turnsThisRound || 0;
+  for (let i = 0; i < state.gorillas.length; i++) state.gorillas[i].alive = !!(s.alive && s.alive[i]);
+  state.craters = (s.craters || []).map(c => ({ x: c.x, y: c.y, r: c.r }));
+  state.shots = []; state.volleyActive = false; state.roundOver = false;
+  mpSeq = s.seq | 0; skylineDirty = true;
+  updateUI(); showToast('🔄 Resincronizat cu adversarul', 120);
+}
+function mpOnReconnect() { if (mpActive && localPlayer === 0 && window.__mpSend) window.__mpSend(mpSnapshot()); } // host re-emite adevărul
 function mpLeave() { mpActive = false; localPlayer = 0; if (window.__mpDisconnect) window.__mpDisconnect(); }
 window.mpStart = mpStart;
 window.mpApplyShot = mpApplyShot;
+window.mpApplySync = mpApplySync;
+window.mpOnReconnect = mpOnReconnect;
 
 function genSkyline() {
   const buildings = [];
@@ -502,6 +553,7 @@ function genSkyline() {
 function applyTheme(t) {
   PALETTE = t;
   canvas.style.background = t.sky;
+  skylineDirty = true;   // H3: paletă/clădiri noi → redesenează skyline-ul o dată
 }
 
 function init(keepScores) {
@@ -586,18 +638,24 @@ function fire() {
   const speed = clamp(velocity, 8, 200) * 0.42 * wpn.spd;
   // online: trimite lovitura mea adversarului (3 numere) ÎNAINTE să simulez local
   if (mpActive && !remoteFiring && window.__mpSend) {
-    window.__mpSend({ t: 'shot', a: Math.round(angle), v: Math.round(velocity), w: selectedWeaponId });
+    window.__mpSend({ t: 'shot', a: Math.round(angle), v: Math.round(velocity), w: selectedWeaponId, seq: mpSeq, cs: mpChecksum() });
   }
   state.trail = [];
   state.shots = [ makeShot(g.x + dir * 16, g.y - 16, dir * speed * Math.cos(rad), -speed * Math.sin(rad), wpn) ];
   state.volleyActive = true;
   state.volleyResolved = false;
   sfxThrow();
-  awardXp(4); // engagement XP la fiecare tragere
-  bumpStreak(); // marchează ziua jucată (o dată pe zi)
+  if (!botFiring && !remoteFiring) { awardXp(4); bumpStreak(); } // M4: XP/streak DOAR pentru loviturile omului local (nu bot/adversar)
+  if (mpActive) mpSeq++; // H2: index de tură monoton, identic pe ambele telefoane
 }
 
-function addCrater(x, y, r) { if (x > -r && x < W + r) state.craters.push({ x, y, r }); }
+function addCrater(x, y, r) {
+  if (x <= -r || x >= W + r) return;
+  for (const c of state.craters) { if (Math.hypot(x - c.x, y - c.y) + r <= c.r) return; } // M5: deja conținut într-un crater mai mare
+  state.craters.push({ x, y, r });
+  if (state.craters.length > 400) state.craters.splice(0, state.craters.length - 400);   // M5: plafon (scoate cele vechi)
+  skylineDirty = true;   // H3: craterele modifică skyline-ul → invalidează cache-ul
+}
 
 function explode(x, y, n, big) {
   const baseS = big ? 5.5 : 3;
@@ -630,13 +688,14 @@ function detonate(shot, x, y) {
   const nuke = w.size > 2;
   let killed = [];
   if (w.effect === 'napalm') {
+    const fireOn = !(state.weather && state.weather.id === 'hail');   // M3: grindina chiar stinge focul (nu doar warning UI)
     for (let o = -2; o <= 2; o++) {
       const fx = x + o * 20;
       addCrater(fx, y, w.crater);
       explode(fx, y, 14, false);
-      for (let f = 0; f < 3; f++) addFire(fx + rand(-10, 10), y - rand(0, 8));
+      if (fireOn) for (let f = 0; f < 3; f++) addFire(fx + rand(-10, 10), y - rand(0, 8));
     }
-    killed = splashKill(x, y, w.kill);
+    killed = splashKill(x, y, fireOn ? w.kill : Math.round(w.kill * 0.55));   // rază de kill redusă în grindină
     explode(x, y, 30, true);
   } else {
     addCrater(x, y, w.crater);
@@ -678,7 +737,7 @@ function gorillaHit(x, y) {
 }
 
 // ════════════════════════ TRAJECTORY PREVIEW ════════════════════════
-function computeTrajectory() {
+function computeTrajectory(maxSteps, markSplit) {
   const angle = parseFloat(document.getElementById('angle').value);
   const velocity = parseFloat(document.getElementById('velocity').value);
   if (isNaN(angle) || isNaN(velocity) || velocity <= 0) return null;
@@ -696,12 +755,13 @@ function computeTrajectory() {
   let dist = 0;
   const pts = [{ x, y }];
   let landing = null;
-  for (let i = 0; i < 1400; i++) {
+  for (let i = 0; i < (maxSteps || 1400); i++) {
     vx += state.wind * 0.018 * wpn.wind;
     vy += 0.18 * gravF;
     const dx = vx * 0.5, dy = vy * 0.5;
     x += dx; y += dy;
     pts.push({ x, y });
+    if (markSplit !== false && wpn.effect === 'air' && i > 8 && vy >= 0) { landing = { x, y, kind: 'air' }; break; }  // L4: split la apex (ca în stepShot)
     if (rot) { dist += Math.hypot(dx, dy); if (dist >= HEAT_ROT_DIST) { landing = { x, y, kind: 'rot' }; break; } }
     const inFrameX = x >= 0 && x <= W;
     if (i > 5 && inFrameX) { const hit = gorillaHit(x, y); if (hit !== -1) { landing = { x, y, kind: hit === state.turn ? 'self' : 'enemy' }; break; } }
@@ -750,6 +810,8 @@ function stepShot(shot) {
     shot.rollLeft -= Math.abs(shot.vx * 0.5);
     shot.rot += 0.3;
     state.trail.push({ x: shot.x, y: shot.y, age: 0, color: w.color });
+    // L2: detonează la contact cu o gorilă în timpul rostogolirii (nu mai trece prin ea fantomatic)
+    if (gorillaHit(shot.x, shot.y) !== -1) { const k = detonate(shot, shot.x, shot.y); if (k.length) endRound(); return { survive: false, children: [] }; }
     if (shot.rollLeft <= 0 || shot.x < 0 || shot.x > W) {
       const k = detonate(shot, shot.x, shot.y); if (k.length) endRound();
       return { survive: false, children: [] };
@@ -798,11 +860,13 @@ function stepShot(shot) {
   if (w.effect === 'air' && !shot.split && shot.vy >= 0 && shot.age > 8) {
     shot.split = true;
     const child = { id: -1, name: 'frag', color: w.color, round: false, size: 0.7,
-      wind: w.wind, grav: w.grav, spd: 1, effect: 'normal', crater: w.childCrater, kill: w.childKill };
+      wind: w.wind, grav: w.grav, spd: 1, effect: 'normal', crater: w.childCrater, kill: w.childKill,
+      mass: w.mass, metal: w.metal, organic: w.organic, fire: w.fire };   // L3: fragmentele moștenesc relația cu vremea
     const kids = [];
     for (let j = 0; j < w.splitN; j++) {
       const spread = (j - (w.splitN - 1) / 2) * 1.4;
-      const c = makeShot(shot.x, shot.y, shot.vx + spread, shot.vy - rand(0.5, 1.5), child);
+      // C1: jitter DETERMINIST (derivat din spread, nu Math.random) → lume identică pe ambele telefoane online/daily
+      const c = makeShot(shot.x, shot.y, shot.vx + spread, shot.vy - (0.5 + Math.abs(spread) * 0.3), child);
       c.split = true; // copiii nu se mai despart
       kids.push(c);
     }
@@ -933,11 +997,11 @@ function botThink() {
   const savedAngle = document.getElementById('angle').value;
   const savedVel = document.getElementById('velocity').value;
   let best = null;
-  for (let a = 12; a <= 86; a += 3) {
-    for (let v = 28; v <= 150; v += 5) {
+  for (let a = 12; a <= 86; a += 4) {                  // H4: grilă mai grosieră (~304 vs ~625 încercări)
+    for (let v = 28; v <= 150; v += 8) {
       document.getElementById('angle').value = a;
       document.getElementById('velocity').value = v;
-      const t = computeTrajectory();
+      const t = computeTrajectory(700, false);         // H4: pași plafonați; markSplit=false → comportament de țintire neschimbat
       if (!t || !t.landing) continue;
       let score = Math.abs(t.landing.x - foe.x) + Math.abs(t.landing.y - foe.y) * 0.4;
       if (t.landing.kind === 'enemy') score -= 99999;
@@ -968,14 +1032,14 @@ function maybeBotTurn() {
   if (botPlayer < 0 || state.roundOver) return;
   if (state.turn !== botPlayer) return;
   botPickWeapon();
-  const best = botThink();
-  if (!best) return;
-  const noise = botDiff === 'usor' ? { a: 9, v: 18 } : (botDiff === 'mediu' ? { a: 4, v: 8 } : { a: 1.2, v: 2.5 });
-  const a = clamp(best.a + rand(-noise.a, noise.a), 0, 90);
-  const v = clamp(best.v + rand(-noise.v, noise.v), 10, 200);
   if (botTimer) clearTimeout(botTimer);
-  botTimer = setTimeout(() => {
+  botTimer = setTimeout(() => {     // H4: TOT sweep-ul rulează aici (în pauza de gândire), NU sincron în init()/step()/rAF
     if (!state || state.turn !== botPlayer || state.roundOver || state.volleyActive) return;
+    const best = botThink();
+    if (!best) return;
+    const noise = botDiff === 'usor' ? { a: 9, v: 18 } : (botDiff === 'mediu' ? { a: 4, v: 8 } : { a: 1.2, v: 2.5 });
+    const a = clamp(best.a + rand(-noise.a, noise.a), 0, 90);
+    const v = clamp(best.v + rand(-noise.v, noise.v), 10, 200);
     document.getElementById('angle').value = Math.round(a);
     document.getElementById('velocity').value = Math.round(v);
     botFiring = true; fire(); botFiring = false;
@@ -1004,7 +1068,10 @@ function drawOrb() {
 const skylineOff = document.createElement('canvas');
 skylineOff.width = W; skylineOff.height = H;
 const sctx = skylineOff.getContext('2d');
+let skylineDirty = true;   // H3: redesenăm offscreen-ul DOAR la schimbare (clădiri/cratere/temă), nu 60×/s
 function drawSkyline() {
+  if (!skylineDirty) return;   // cache hit — evită ~685 draw-calls/frame
+  skylineDirty = false;
   sctx.clearRect(0, 0, W, H);
   sctx.fillStyle = PALETTE.ground;
   sctx.fillRect(0, H - 20, W, 20);
@@ -1027,15 +1094,15 @@ function drawGorilla(g, idx) {
   let yOff = 0, lUp = 0, rUp = 0;
   if (isWinner) { const t = state.overTimer * 0.25, ph = Math.sin(t); lUp = Math.max(0, ph); rUp = Math.max(0, -ph); yOff = -Math.abs(Math.sin(t)) * 12; }
   const x = g.x, y = g.y + yOff;
-  ctx.fillStyle = '#3a2418';
+  ctx.fillStyle = '#9a6a44';   // corp: maro mai deschis (vizibil pe cer de noapte)
   ctx.beginPath(); ctx.ellipse(x, y - 2, 13, 14, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(x, y - 20, 11, 12, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#221208';
+  ctx.fillStyle = '#6e4a2e';   // brațe/picioare: mai închis decât corpul (separare), dar tot vizibil
   ctx.beginPath(); ctx.ellipse(x - 14, y - 1 - lUp * 28, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(x + 14, y - 1 - rUp * 28, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(x - 7, y + 14, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(x + 7, y + 14, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#4a3022';
+  ctx.fillStyle = '#c2926a';   // față/bot: ton deschis ca să iasă în evidență
   ctx.beginPath(); ctx.ellipse(x, y - 17, 7, 8, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.fillRect(x - 4, y - 20, 2, 2); ctx.fillRect(x + 2, y - 20, 2, 2);
   ctx.fillStyle = '#000'; ctx.fillRect(x - 3, y - 20, 1, 1); ctx.fillRect(x + 3, y - 20, 1, 1);
@@ -1561,7 +1628,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Adversar deconectat — aștept 
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v11';
+const APP_VERSION = 'v12';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)
@@ -1582,7 +1649,7 @@ init(false);
 loop();
 </script>
 
-<!-- ── MODUL MULTIPLAYER (Trystero / WebRTC, relee publice — fără server propriu) ── -->
+<!-- ── MODUL MULTIPLAYER (Trystero / WebRTC; signaling pe relee nostr publice + TURN self-hosted pe AWS) ── -->
 <script type="module">
   const st = (m) => { if (window.__mpStatus) window.__mpStatus(m); };
   let joinRoom = null;
@@ -1597,6 +1664,10 @@ loop();
     relayUrls: ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.snort.social', 'wss://nostr-pub.wellorder.net', 'wss://relay.primal.net'],
     relayRedundancy: 4,
     rtcConfig: {
+      // ⚠️ SECURITATE (L1): credențial TURN STATIC expus în client public. Inevitabil client-side, dar NU e time-limited.
+      // DE FĂCUT: rotește-l acum (e și în git history) → trece pe TURN-REST (coturn use-auth-secret + HMAC, TTL ~1h,
+      // emis de o funcție serverless) + total-quota/user-quota/max-bps pe coturn + alarmă de billing AWS,
+      // altfel oricine scrapează sursa îți poate folosi releul ca proxy pe factura ta.
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:34.240.128.193:3478' },
@@ -1605,19 +1676,26 @@ loop();
       ],
     },
   };
-  let room = null, sendShot = null, sendPing = null, isHost = false, started = false, joinTimer = null, hbTimer = null, peerHere = false;
+  let room = null, sendShot = null, sendPing = null, sendSync = null, isHost = false, started = false, joinTimer = null, hbTimer = null, peerHere = false;
 
   window.__mpConnect = function (code, asHost) {
     if (!joinRoom) { st('❌ Modul online neîncărcat' + (window.__mpLoadError ? ': ' + window.__mpLoadError : '')); return; }
     try {
       isHost = asHost; started = false; peerHere = false;
       st('📡 Conectare la relee…');
+      if (room) { try { room.leave(); } catch (e) {} room = null; }   // L6: părăsește room-ul anterior (fără handler-e/room orfane la re-host)
       room = joinRoom(config, 'gorillas-' + code);
       const [sShot, gShot] = room.makeAction('shot');
       const [sPing, gPing] = room.makeAction('ping');
-      sendShot = sShot; sendPing = sPing;
-      window.__mpSend = (obj) => { if (obj && obj.t === 'shot' && sendShot) sendShot(obj); };
-      gShot((d) => { if (window.mpApplyShot) window.mpApplyShot(d.a, d.v, d.w); });
+      const [sSync, gSync] = room.makeAction('sync');
+      sendShot = sShot; sendPing = sPing; sendSync = sSync;
+      window.__mpSend = (obj) => {   // L6: forward generalizat (shot + sync), ca să poată circula checksum/snapshot
+        if (!obj) return;
+        if (obj.t === 'shot' && sendShot) sendShot(obj);
+        else if (obj.t === 'sync' && sendSync) sendSync(obj);
+      };
+      gShot((d) => { if (window.mpApplyShot) window.mpApplyShot(d.a, d.v, d.w, d.seq, d.cs); });
+      gSync((d) => { if (window.mpApplySync) window.mpApplySync(d); });   // C2/M1: resincronizare
       gPing(() => {}); // heartbeat de la adversar — ține conexiunea vie (NAT mobil închide la inactivitate)
       st(asHost ? '🟢 În cameră ' + code + ' — aștept adversarul…' : '🔌 În cameră ' + code + ' — caut host-ul…');
       // HEARTBEAT: trimit un semnal la 6s ca să nu se închidă conexiunea în pauzele dintre ture
@@ -1627,7 +1705,7 @@ loop();
       room.onPeerJoin(() => {
         clearTimeout(joinTimer);
         peerHere = true;
-        if (started) { if (window.__mpStatus) window.__mpStatus('🔄 Reconectat!'); return; } // reconectare după un blip — continuăm
+        if (started) { if (window.__mpStatus) window.__mpStatus('🔄 Reconectat!'); if (window.mpOnReconnect) window.mpOnReconnect(); return; } // M1: la reconectare host-ul re-emite snapshot autoritar
         started = true;
         st('✅ Adversar găsit! Pornesc…');
         if (window.mpStart) window.mpStart(code, asHost ? 0 : 1);

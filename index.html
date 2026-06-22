@@ -351,6 +351,17 @@ const THEMES = [
     buildings: ['#11331f','#1c4a2c','#0c2616','#266138','#173d24'], windowOn:'#b6ff7a', windowOff:'#08130c', ground:'#06140b', orb:'none', orbColor:'180,255,140' },
   { name: 'Furtună', sky: 'linear-gradient(180deg,#2a2d3a 0%,#3c4150 35%,#52586a 65%,#6b7180 100%)',
     buildings: ['#22242e','#30343f','#191b22','#3d4250','#272a33'], windowOn:'#ffe98a', windowOff:'#12131a', ground:'#101117', orb:'none', orbColor:'220,225,235' },
+  // ── teme noi (v13) ──
+  { name: 'Iarnă', sky: 'linear-gradient(180deg,#acc6e0 0%,#c3d6e8 45%,#dce8f2 78%,#eef4f8 100%)',
+    buildings: ['#7c8ba0','#69788f','#8c9bb0','#5c6b80','#9aa8bb'], windowOn:'#fff7d0', windowOff:'#46566a', ground:'#e8eef3', orb:'sun', orbColor:'255,250,235' },
+  { name: 'Vulcan', sky: 'linear-gradient(180deg,#1a0a0a 0%,#3a1208 45%,#7a2810 75%,#c24818 100%)',
+    buildings: ['#2a1410','#3a1c14','#1c0e0a','#48241a','#301812'], windowOn:'#ff7a2a', windowOff:'#1a0c08', ground:'#2a0e08', orb:'none', orbColor:'255,140,60' },
+  { name: 'Spațiu', sky: 'linear-gradient(180deg,#02030a 0%,#070c1e 50%,#0d1430 100%)',
+    buildings: ['#4a4f59','#3c4049','#585e6a','#33373f','#50555f'], windowOn:'#cfe2ff', windowOff:'#2a2e36', ground:'#3a3e47', orb:'moon', orbColor:'235,240,255' },
+  { name: 'Subacvatic', sky: 'linear-gradient(180deg,#03304a 0%,#075a72 45%,#0a7d8c 75%,#13a8a0 100%)',
+    buildings: ['#c2683f','#1f8f86','#d98a4a','#2a9a90','#b05030'], windowOn:'#ffe0b0', windowOff:'#0a3a40', ground:'#063038', orb:'none', orbColor:'160,255,235' },
+  { name: 'Bomboane', sky: 'linear-gradient(180deg,#2a0a3a 0%,#5a1466 40%,#a02a8a 75%,#ff6ab0 100%)',
+    buildings: ['#ff5fa2','#7a4fdd','#ff9f4f','#4fd0ff','#c84fff'], windowOn:'#ffffff', windowOff:'#3a1a4a', ground:'#2a0a3a', orb:'none', orbColor:'255,150,210' },
 ];
 let PALETTE = THEMES[0];
 const boom = ['#ff3833','#ff8c33','#ffd633','#ffffff'];
@@ -371,6 +382,10 @@ const WEAPONS = [
   { id:9,  name:'Sniper',     icon:'🎯', rank:9,  color:'#ffffff', round:false, size:0.8, wind:0.3, grav:0.8, spd:1.45,mass:'light', metal:true,    effect:'normal', crater:12, kill:20, desc:'Rapidă, plată, metal. Ignoră vânt și vreme — skill pur.' },
   { id:10, name:'Grindină',   icon:'🌨️', rank:10, color:'#cfeeff', round:false, size:0.9, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:8, childCrater:9, childKill:14, desc:'8 schije la apex. Saturație totală.' },
   { id:11, name:'NUKE',       icon:'☢️', rank:12, color:'#ffee55', round:true,  size:2.2, wind:1.0, grav:1.0, spd:0.85,mass:'heavy', metal:true,    effect:'normal', crater:90, kill:95, desc:'Sfârșitul lumii. Atenție la propriul recul.' },
+  // ── arme noi spectaculoase (v13) ──
+  { id:12, name:'Meteoriți',   icon:'☄️', rank:11, color:'#ff7a33', round:false, size:1.1, wind:1.0, grav:1.05,spd:1.0, mass:'light', fire:true,  effect:'air', splitN:6, childCrater:15, childKill:22, desc:'Se sparge într-o ploaie de meteoriți de foc.' },
+  { id:13, name:'Fulger',      icon:'⚡', rank:11, color:'#bfe6ff', round:false, size:0.8, wind:0.2, grav:0.85,spd:1.4, mass:'light', metal:true, effect:'lightning', crater:26, kill:46, desc:'Cheamă un trăsnet din cer la impact. Fulgerător.' },
+  { id:14, name:'Gaură Neagră',icon:'🌀', rank:12, color:'#b06aff', round:true,  size:1.2, wind:0.6, grav:1.0, spd:0.9, mass:'heavy', metal:true, effect:'blackhole', crater:40, kill:80, desc:'Implozie care înghite tot în jur. Rază uriașă.' },
 ];
 
 // ════════════════════════ WEATHER (strat strategic — predictibil) ════════════════════════
@@ -387,6 +402,19 @@ function themeByName(n) { return THEMES.find(t => t.name === n) || THEMES[0]; }
 // e proiectilul afectat de grindină / arșiță?
 function hitByHail(w) { return state.weather && state.weather.id === 'hail' && w.mass === 'light' && !w.metal; }
 function rotsInHeat(w) { return state.weather && state.weather.id === 'heat' && w.organic && !w.metal; }
+
+// ════════════════════════ BIOMES (PLANȘE: temă + relief + vreme + ambient) ════════════════════════
+// terrain: city | rock | tower | mesa   ·   ambient: none | snow | ember | bubble | star
+const BIOMES = [
+  { name:'Oraș Apus',          theme:'Apus',       terrain:'city',  weather:'calm', ambient:'none'   },
+  { name:'Oraș Noapte',        theme:'Noapte',     terrain:'city',  weather:'hail', ambient:'none'   },
+  { name:'Furtună în oraș',    theme:'Furtună',    terrain:'city',  weather:'wind', ambient:'none'   },
+  { name:'Munți de iarnă',     theme:'Iarnă',      terrain:'rock',  weather:'hail', ambient:'snow'   },
+  { name:'Vulcanul',           theme:'Vulcan',     terrain:'rock',  weather:'heat', ambient:'ember'  },
+  { name:'Lună',               theme:'Spațiu',     terrain:'mesa',  weather:'calm', ambient:'star'   },
+  { name:'Adâncuri',           theme:'Subacvatic', terrain:'tower', weather:'calm', ambient:'bubble' },
+  { name:'Tărâm de bomboane',  theme:'Bomboane',   terrain:'tower', weather:'wind', ambient:'none'   },
+];
 
 // ════════════════════════ PROGRESSION (localStorage) ════════════════════════
 const PROFILE_KEY = 'gorillas_profile_v1';
@@ -526,23 +554,46 @@ window.mpApplyShot = mpApplyShot;
 window.mpApplySync = mpApplySync;
 window.mpOnReconnect = mpOnReconnect;
 
-function genSkyline() {
+function genSkyline(terrain) {
+  terrain = terrain || 'city';
   const buildings = [];
   const groundY = H - 20;
+  // relief de munți/vulcan: 2 vârfuri FIXE (deterministe via worldRng) → siluetă de munte
+  let peaks = null;
+  if (terrain === 'rock') peaks = [
+    { cx: wrandInt(W * 0.18, W * 0.40), ph: wrandInt(230, 330) },
+    { cx: wrandInt(W * 0.60, W * 0.84), ph: wrandInt(210, 320) },
+  ];
   let x = 0;
   while (x < W) {
-    let w = wrandInt(70, 115);
+    let w = wrandInt(terrain === 'rock' ? 46 : 70, terrain === 'rock' ? 80 : 115);
     if (x + w > W) w = W - x;
-    if (w < 40) { if (buildings.length) buildings[buildings.length - 1].w += w; break; }
-    const h = wrandInt(130, 350);
+    if (w < 36) { if (buildings.length) buildings[buildings.length - 1].w += w; break; }
+    const cx = x + w / 2;
+    let h;
+    if (terrain === 'rock') {
+      h = 70 + Math.max.apply(null, peaks.map(p => p.ph * Math.exp(-Math.pow(cx - p.cx, 2) / (2 * 150 * 150))));
+      h = Math.round(h) + wrandInt(-12, 12);
+    } else if (terrain === 'mesa') {
+      h = wrandInt(200, 300);
+    } else if (terrain === 'tower') {
+      h = wrandInt(150, 340);
+    } else {
+      h = wrandInt(130, 350);
+    }
+    h = Math.max(60, h);
     const y = groundY - h;
     const color = PALETTE.buildings[wrandInt(0, PALETTE.buildings.length - 1)];
     const windows = [];
-    const winW = 9, winH = 11, gx = 6, gy = 7;
-    for (let wy = y + 18; wy < groundY - 18; wy += winH + gy) {
-      for (let wx = x + 9; wx < x + w - 14; wx += winW + gx) {
-        windows.push({ x: wx, y: wy, lit: worldRng() < 0.5 });
-      }
+    if (terrain === 'city') {
+      const winW = 9, winH = 11, gx = 6, gy = 7;
+      for (let wy = y + 18; wy < groundY - 18; wy += winH + gy)
+        for (let wx = x + 9; wx < x + w - 14; wx += winW + gx)
+          windows.push({ x: wx, y: wy, lit: worldRng() < 0.5 });
+    } else if (terrain === 'tower') {
+      // puncte luminoase rare (coral / bomboane)
+      for (let wy = y + 18; wy < groundY - 14; wy += 26)
+        if (worldRng() < 0.6) windows.push({ x: cx - 4 + wrandInt(-6, 6), y: wy, lit: true, dot: true });
     }
     buildings.push({ x, y, w, h, color, windows });
     x += w;
@@ -556,14 +607,107 @@ function applyTheme(t) {
   skylineDirty = true;   // H3: paletă/clădiri noi → redesenează skyline-ul o dată
 }
 
+// ── AMBIENT cosmetic per biome (zăpadă / scântei / bule / stele) — pur Math.random (nu afectează gameplay) ──
+function seedAmbient(type) {
+  state.ambient = []; state.ambientType = type || 'none';
+  if (!type || type === 'none') return;
+  const n = type === 'star' ? 70 : 46;
+  for (let i = 0; i < n; i++) {
+    if (type === 'snow') state.ambient.push({ x: rand(0, W), y: rand(0, H), vx: rand(-0.3, 0.3), vy: rand(0.6, 1.4), r: rand(1.5, 3) });
+    else if (type === 'ember') state.ambient.push({ x: rand(0, W), y: rand(0, H), vx: rand(-0.4, 0.4), vy: -rand(0.5, 1.3), r: rand(1, 2.4) });
+    else if (type === 'bubble') state.ambient.push({ x: rand(0, W), y: rand(0, H), vx: rand(-0.2, 0.2), vy: -rand(0.5, 1.1), r: rand(2, 5) });
+    else if (type === 'star') state.ambient.push({ x: rand(0, W), y: rand(0, H * 0.7), r: rand(0.6, 1.8), tw: rand(0, 6.28) });
+  }
+}
+function stepAmbient() {
+  if (!state.ambient || !state.ambient.length) return;
+  const t = state.ambientType;
+  for (const p of state.ambient) {
+    if (t === 'star') { p.tw += 0.06; continue; }
+    p.x += p.vx; p.y += p.vy;
+    if (t === 'snow' && p.y > H) { p.y = -4; p.x = rand(0, W); }
+    if ((t === 'ember' || t === 'bubble') && p.y < -4) { p.y = H + 4; p.x = rand(0, W); }
+    if (p.x < 0) p.x += W; else if (p.x > W) p.x -= W;
+  }
+}
+function drawAmbient() {
+  const A = state.ambient, t = state.ambientType;
+  if (!A || !A.length) return;
+  if (t === 'snow') { ctx.fillStyle = 'rgba(255,255,255,0.85)'; for (const p of A) { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.28); ctx.fill(); } }
+  else if (t === 'ember') { for (const p of A) { ctx.fillStyle = 'rgba(255,150,50,0.8)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.28); ctx.fill(); } }
+  else if (t === 'bubble') { ctx.strokeStyle = 'rgba(200,245,255,0.55)'; ctx.lineWidth = 1; for (const p of A) { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.28); ctx.stroke(); } }
+  else if (t === 'star') { for (const p of A) { const a = 0.35 + 0.5 * Math.abs(Math.sin(p.tw)); ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(2) + ')'; ctx.fillRect(p.x, p.y, p.r, p.r); } }
+}
+
+// ── BALON BONUS (mod nou): plutește pe cer; dacă-l nimerești → pop + XP bonus. Pur local (nu afectează simularea MP) ──
+function stepBalloon() {
+  if (state.roundOver) return;
+  if (state.balloon) {
+    const b = state.balloon;
+    b.x += b.vx; b.y += Math.sin(state.frame * 0.05 + b.ph) * 0.4;
+    if (b.x < -50 || b.x > W + 50) state.balloon = null;
+    return;
+  }
+  if (state.balloonCool > 0) { state.balloonCool--; return; }
+  if (Math.random() < 0.012) {
+    const fromLeft = Math.random() < 0.5, zep = Math.random() < 0.35;
+    state.balloon = { x: fromLeft ? -30 : W + 30, y: rand(48, 180), vx: (fromLeft ? 1 : -1) * rand(1.1, 1.9),
+      r: zep ? 26 : 16, zep, ph: rand(0, 6.28), color: ['#ff5fa2','#5fc8ff','#ffd24a','#7affb0','#c88aff'][randInt(0, 4)] };
+    state.balloonCool = 360;
+  }
+}
+function popBalloon() {
+  const b = state.balloon; if (!b) return;
+  for (let i = 0; i < 22; i++) { const a = Math.random() * 6.28, s = rand(1, 4); state.particles.push({ x: b.x, y: b.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: 1, color: ['#ffd700','#ff5fa2','#5fc8ff','#7affb0'][randInt(0, 3)] }); }
+  state.balloon = null; state.balloonCool = 300; sfxBounce();
+  const localTurn = (botPlayer < 0 || state.turn !== botPlayer) && (!mpActive || state.turn === localPlayer);
+  if (localTurn) { awardXp(15); showToast('🎈 +15 XP — balon spart!', 120); }
+}
+function drawBalloon() {
+  const b = state.balloon; if (!b) return;
+  ctx.save();
+  if (b.zep) {
+    ctx.fillStyle = b.color; ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 1.7, b.r, 0, 0, 6.28); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.beginPath(); ctx.ellipse(b.x, b.y - b.r * 0.4, b.r * 1.3, b.r * 0.3, 0, 0, 6.28); ctx.fill();
+    ctx.fillStyle = '#3a3a44'; ctx.fillRect(b.x - 8, b.y + b.r * 0.8, 16, 7);
+  } else {
+    ctx.fillStyle = b.color; ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 0.82, b.r, 0, 0, 6.28); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(b.x - b.r * 0.3, b.y - b.r * 0.35, b.r * 0.22, b.r * 0.3, 0, 0, 6.28); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(b.x, b.y + b.r); ctx.lineTo(b.x, b.y + b.r + 10); ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawBolts() {
+  if (!state.bolts || !state.bolts.length) return;
+  ctx.save();
+  for (const b of state.bolts) {
+    ctx.globalAlpha = Math.min(1, b.t / 10);
+    ctx.strokeStyle = '#cfe8ff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(b.x, 0);
+    let yy = 0;
+    while (yy < b.y) { yy = Math.min(b.y, yy + rand(16, 32)); ctx.lineTo(b.x + rand(-16, 16), yy); }
+    ctx.stroke();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  ctx.globalAlpha = 1; ctx.restore();
+}
+function drawVortex() {
+  const v = state.vortex; if (!v) return;
+  const k = v.t / 28;
+  ctx.save(); ctx.translate(v.x, v.y); ctx.rotate((28 - v.t) * 0.5); ctx.globalAlpha = 0.6 * k;
+  for (let i = 0; i < 3; i++) { ctx.strokeStyle = i % 2 ? '#d8a8ff' : '#b06aff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, (7 + i * 8) * (0.5 + k), i * 2, i * 2 + 4.2); ctx.stroke(); }
+  ctx.globalAlpha = 1; ctx.restore();
+}
+
 function init(keepScores) {
   if (!keepScores) scores = [0, 0];
   // MP: worldRng e setat o dată la startul meciului (stream continuu, sincron pe ambele telefoane) — nu-l reseta.
   // DAILY: aceeași lume pentru toți, seedată după data zilei. Altfel — aleatoriu.
   if (!mpActive) worldRng = dailyMode ? mulberry32(dailySeedNum()) : Math.random;
-  const weather = WEATHERS[wrandInt(0, WEATHERS.length - 1)];
-  applyTheme(themeByName(weather.theme)); // tema urmează vremea = varietate + coerență
-  const buildings = genSkyline();
+  const biome = BIOMES[wrandInt(0, BIOMES.length - 1)];                 // PLANȘA: alege temă + relief + vreme + ambient
+  const weather = WEATHERS.find(w => w.id === biome.weather) || WEATHERS[0];
+  applyTheme(themeByName(biome.theme));
+  const buildings = genSkyline(biome.terrain);
   const b1 = buildings[1] || buildings[0];
   const b2 = buildings[buildings.length - 2] || buildings[buildings.length - 1];
   state = {
@@ -582,6 +726,8 @@ function init(keepScores) {
     particles: [],
     fires: [],
     hail: [],
+    ambient: [], ambientType: biome.ambient, terrain: biome.terrain, biomeName: biome.name,
+    bolts: [], vortex: null, balloon: null, balloonCool: 240,
     roundOver: false,
     overTimer: 0,
     overMsg: '',
@@ -594,6 +740,7 @@ function init(keepScores) {
   };
   aim = null;
   if (weather.id === 'hail') for (let i = 0; i < 80; i++) state.hail.push({ x: rand(0, W), y: rand(0, H), s: rand(7, 11) });
+  seedAmbient(biome.ambient);
   if (botPlayer >= 0 && state.turn !== botPlayer) selectedWeaponId = humanWeaponId;
   updateUI();
   renderWeaponBar(); // reflectă slăbiciunile pe vremea curentă
@@ -611,7 +758,7 @@ function updateUI() {
   const arrow = w > 0 ? '→' : '←';
   const wx = state.weather;
   document.getElementById('status').innerHTML =
-    `Vânt: <b>${arrow}</b> ${Math.abs(w).toFixed(1)} &nbsp;·&nbsp; <b style="color:#7fd0ff">${wx.icon} ${wx.name}</b> — <span style="color:#cbb8e0">${wx.effect}</span>`;
+    `<b style="color:#ffd27a">${state.biomeName || ''}</b> &nbsp;·&nbsp; Vânt: <b>${arrow}</b> ${Math.abs(w).toFixed(1)} &nbsp;·&nbsp; <b style="color:#7fd0ff">${wx.icon} ${wx.name}</b> — <span style="color:#cbb8e0">${wx.effect}</span>`;
 }
 
 function showToast(msg, t) { if (state) state.toast = { msg, t }; }
@@ -670,6 +817,15 @@ function addFire(x, y) {
   state.fires.push({ x, y, life: 1 + Math.random() * 0.6 });
 }
 
+// implozie: particule pornesc din jur și sunt trase SPRE centru (efect gaură neagră) — pur cosmetic
+function explodeImplode(x, y, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, d = rand(28, 95);
+    state.particles.push({ x: x + Math.cos(a) * d, y: y + Math.sin(a) * d,
+      vx: -Math.cos(a) * rand(2, 4.2), vy: -Math.sin(a) * rand(2, 4.2) - 0.4, life: 1, color: i % 2 ? '#b06aff' : '#d8a8ff' });
+  }
+}
+
 // splash kill: oricine în raza KR de la centru moare
 function splashKill(x, y, KR) {
   const dead = [];
@@ -697,14 +853,27 @@ function detonate(shot, x, y) {
     }
     killed = splashKill(x, y, fireOn ? w.kill : Math.round(w.kill * 0.55));   // rază de kill redusă în grindină
     explode(x, y, 30, true);
+  } else if (w.effect === 'lightning') {            // ⚡ trăsnet din cer
+    addCrater(x, y, w.crater);
+    explode(x, y, 64, true);
+    killed = splashKill(x, y, w.kill);
+    (state.bolts = state.bolts || []).push({ x, y, t: 14 });
+  } else if (w.effect === 'blackhole') {            // 🌀 implozie — particule înghițite spre centru
+    addCrater(x, y, w.crater);
+    explodeImplode(x, y, 64);
+    explode(x, y, 40, true);
+    killed = splashKill(x, y, w.kill);
+    state.vortex = { x, y, t: 28 };
   } else {
     addCrater(x, y, w.crater);
     explode(x, y, nuke ? 90 : 50, true);
     killed = splashKill(x, y, w.kill);
+    if (w.fire && !(state.weather && state.weather.id === 'hail')) addFire(x, y);   // meteoriți lasă foc (stins de grindină)
   }
   // ── JUICE: screen shake + flash (scalat cu raza craterului, cap 8px) ──
-  state.shake = Math.min(8, nuke ? 8 : w.crater * 0.13);
-  state.flash = nuke ? 1 : 0.5;
+  const huge = nuke || w.effect === 'lightning' || w.effect === 'blackhole';
+  state.shake = Math.min(8, huge ? 8 : w.crater * 0.13);
+  state.flash = (nuke || w.effect === 'lightning') ? 1 : 0.5;
   sfxBoom(true, nuke);
   if (killed.length) {
     for (const i of killed) state.gorillas[i].alive = false;
@@ -874,6 +1043,9 @@ function stepShot(shot) {
     return { survive: false, children: kids };
   }
 
+  // balon bonus: dacă proiectilul îl atinge → pop (proiectilul își continuă drumul)
+  if (state.balloon) { const bb = state.balloon, bdx = shot.x - bb.x, bdy = shot.y - bb.y; if (bdx * bdx + bdy * bdy <= (bb.r + 6) * (bb.r + 6)) popBalloon(); }
+
   // gorilla direct hit
   if (inFrameX && shot.age > 5) {
     const hit = gorillaHit(shot.x, shot.y);
@@ -928,6 +1100,11 @@ function step() {
     const wx = state.wind * 0.5;
     for (const h of state.hail) { h.y += h.s; h.x -= wx; if (h.y > H) { h.y = -5; h.x = rand(0, W); } if (h.x < 0) h.x += W; if (h.x > W) h.x -= W; }
   }
+  stepAmbient();   // ambient de biome (zăpadă/scântei/bule/stele)
+  // efecte temporare (trăsnet / vortex) + balon bonus
+  if (state.bolts && state.bolts.length) { for (const b of state.bolts) b.t--; state.bolts = state.bolts.filter(b => b.t > 0); }
+  if (state.vortex) { if (--state.vortex.t <= 0) state.vortex = null; }
+  stepBalloon();
   // trail aging
   for (const t of state.trail) t.age++;
   state.trail = state.trail.filter(t => t.age < 120);
@@ -1075,12 +1252,33 @@ function drawSkyline() {
   sctx.clearRect(0, 0, W, H);
   sctx.fillStyle = PALETTE.ground;
   sctx.fillRect(0, H - 20, W, 20);
+  const terr = (state && state.terrain) || 'city';
   for (const b of state.buildings) {
     sctx.fillStyle = b.color;
-    sctx.fillRect(b.x, b.y, b.w, b.h);
-    sctx.fillStyle = 'rgba(255,255,255,0.06)';
-    sctx.fillRect(b.x, b.y, b.w, 2);
-    for (const win of b.windows) { sctx.fillStyle = win.lit ? PALETTE.windowOn : PALETTE.windowOff; sctx.fillRect(win.x, win.y, 9, 11); }
+    if (terr === 'tower') {                          // turn cu vârf rotund (coral / bomboane)
+      const r = b.w / 2;
+      sctx.fillRect(b.x, b.y + r, b.w, b.h - r);
+      sctx.beginPath(); sctx.arc(b.x + r, b.y + r, r, Math.PI, 0); sctx.fill();
+    } else {
+      sctx.fillRect(b.x, b.y, b.w, b.h);
+      sctx.fillStyle = 'rgba(255,255,255,0.06)'; sctx.fillRect(b.x, b.y, b.w, 2);
+    }
+    if (terr === 'rock') {                           // vârf triunghiular + glazură (zăpadă albă / lavă portocalie)
+      const capH = Math.min(34, b.h * 0.4);
+      sctx.fillStyle = b.color;
+      sctx.beginPath(); sctx.moveTo(b.x, b.y + capH); sctx.lineTo(b.x + b.w / 2, b.y - capH * 0.5); sctx.lineTo(b.x + b.w, b.y + capH); sctx.closePath(); sctx.fill();
+      sctx.fillStyle = PALETTE.name === 'Vulcan' ? 'rgba(255,110,40,0.92)' : 'rgba(255,255,255,0.92)';
+      sctx.beginPath(); sctx.moveTo(b.x + b.w * 0.34, b.y + capH * 0.12); sctx.lineTo(b.x + b.w / 2, b.y - capH * 0.5); sctx.lineTo(b.x + b.w * 0.66, b.y + capH * 0.12); sctx.closePath(); sctx.fill();
+    }
+    for (const win of b.windows) {
+      if (win.dot) { sctx.fillStyle = PALETTE.windowOn; sctx.beginPath(); sctx.arc(win.x + 4, win.y, 3, 0, 6.28); sctx.fill(); }
+      else { sctx.fillStyle = win.lit ? PALETTE.windowOn : PALETTE.windowOff; sctx.fillRect(win.x, win.y, 9, 11); }
+    }
+    if (terr === 'mesa') {                           // cratere/pete pe platou (lună)
+      sctx.fillStyle = 'rgba(0,0,0,0.18)';
+      sctx.beginPath(); sctx.ellipse(b.x + b.w * 0.35, b.y + 14, 6, 3, 0, 0, 6.28); sctx.fill();
+      sctx.beginPath(); sctx.ellipse(b.x + b.w * 0.68, b.y + 26, 4, 2.4, 0, 0, 6.28); sctx.fill();
+    }
   }
   sctx.save();
   sctx.globalCompositeOperation = 'destination-out';
@@ -1299,6 +1497,8 @@ function render() {
   drawOrb();
   drawSkyline();
   ctx.drawImage(skylineOff, 0, 0);
+  drawAmbient();   // zăpadă/scântei/bule/stele de biome
+  drawBalloon();   // balon bonus pe cer
   drawFires();
   for (let i = 0; i < state.gorillas.length; i++) drawGorilla(state.gorillas[i], i);
   drawTrajectoryPreview();
@@ -1307,6 +1507,8 @@ function render() {
   for (const s of state.shots) drawShot(s);
   if (state.lastLanding) drawOffscreenTracker(state.lastLanding.x, state.lastLanding.y, state.lastLanding.kind, state.lastLanding.t);
   drawParticles();
+  drawVortex();   // 🌀 gaură neagră
+  drawBolts();    // ⚡ trăsnet
   drawHail();
   // JUICE: flash alb la explozie (peste scenă, sub UI)
   if (state.flash > 0) { ctx.globalAlpha = state.flash * 0.55; ctx.fillStyle = '#fff'; ctx.fillRect(-12, -12, W + 24, H + 24); ctx.globalAlpha = 1; }
@@ -1628,7 +1830,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Adversar deconectat — aștept 
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v12';
+const APP_VERSION = 'v13';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

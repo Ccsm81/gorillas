@@ -409,7 +409,7 @@ const boom = ['#ff3833','#ff8c33','#ffd633','#ffffff'];
 // mass: light|medium|heavy  ·  organic: banană (putrezește pe arșiță)  ·  metal: imun la grindină/arșiță
 const WEAPONS = [
   { id:0,  name:'Banana',     icon:'🍌', rank:0,  color:'#ffe048', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'normal', crater:22, kill:28, desc:'The classic. Balanced — wind pushes it normally.' },
-  { id:1,  name:'Triple MIRV',icon:'🔱', rank:1,  color:'#ffd84a', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:3, childCrater:16, childKill:24, desc:'Splits into 3 at the apex. Wide coverage.' },
+  { id:1,  name:'Triple MIRV',icon:'🔱', rank:0,  color:'#ffd84a', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:3, childCrater:16, childKill:24, desc:'Splits into 3 at the apex. Wide coverage.' },
   { id:2,  name:'Heavy Ball', icon:'🎳', rank:2,  color:'#cfcfcf', round:true,  size:1.3, wind:0.0, grav:1.35,spd:0.95,mass:'heavy', metal:true,    effect:'heavy', crater:34, kill:40, desc:'IMMUNE to wind and weather. Drops hard, big crater.' },
   { id:3,  name:'Cluster',    icon:'💥', rank:3,  color:'#ffcf33', round:false, size:1.0, wind:1.0, grav:1.0, spd:1.0, mass:'light', organic:true,  effect:'air', splitN:5, childCrater:12, childKill:18, desc:'5 fragments at the apex. A rain of small blasts.' },
   { id:4,  name:'Big Banana', icon:'🟡', rank:4,  color:'#ffe048', round:false, size:1.8, wind:1.0, grav:1.1, spd:0.9, mass:'light', organic:true,  effect:'normal', crater:50, kill:60, desc:'Slow but devastating. Huge crater.' },
@@ -1043,6 +1043,7 @@ function computeTrajectory(maxSteps, markSplit) {
 }
 
 // ════════════════════════ STEP ════════════════════════
+let winRun = 0;  // R3-idee: combo de victorii consecutive ale omului local (reset la înfrângere/egal)
 function endRound() {
   state.shots = [];
   state.volleyActive = false;
@@ -1058,18 +1059,25 @@ function endRound() {
     if (scores[winner] >= MATCH_TARGET) {        // best-of: meci câștigat
       state.matchOver = true;
       state.overMsg = `🏆 ${who} wins the MATCH ${scores[0]}–${scores[1]}!`;
-      if (localWon) {
-        profile.aim = (profile.aim || 0) + 2; saveProfile();   // R1: +2 puncte de traiectorie la meci câștigat
-        showToast('🎯 +2 trajectory points!', 200);
-        missionEvent('matchWin');
-      }
+      if (localWon) missionEvent('matchWin');
     } else {
       state.overMsg = `${who} wins the round  (${scores[0]}–${scores[1]})`;
     }
-    if (localWon) { missionEvent('roundWin'); if (state.weather && state.weather.id === 'wind') missionEvent('windWin'); }
+    if (localWon) {
+      // R1: +2 puncte de traiectorie la FIECARE rundă câștigată (ai omorât cealaltă maimuță), nu doar la meci.
+      // Pleci de la 0 (fără traseu/țintă); cu fiecare kill traseul crește, până apare complet + ținta.
+      profile.aim = (profile.aim || 0) + 2; saveProfile(); refreshProgressUI();
+      showToast('🎯 +2 trajectory! (aim ' + profile.aim + ')', 160);
+      missionEvent('roundWin'); if (state.weather && state.weather.id === 'wind') missionEvent('windWin');
+      // R3-idee: COMBO de victorii consecutive → anunț mare + bonus XP (mai mult haz, reward loop)
+      winRun++;
+      const COMBO = { 2: 'DOUBLE!', 3: 'TRIPLE!', 4: 'RAMPAGE!', 5: 'UNSTOPPABLE!', 7: 'GODLIKE!', 10: 'LEGENDARY!' };
+      if (COMBO[winRun]) { const bonus = winRun * 5; awardXp(bonus); state.bigText = { msg: '🔥 ' + COMBO[winRun] + '  +' + bonus + ' XP', t: 110 }; state.flash = Math.max(state.flash, 0.5); }
+    } else { winRun = 0; }
     awardXp(localWon ? 75 : 10); // R-audit L1: XP plin doar la victorie locală; înfrângere = consolare mică
     sfxWin();
   } else {
+    winRun = 0;
     state.overMsg = 'Draw — both down!';
     awardXp(20);
   }
@@ -1221,6 +1229,7 @@ function step() {
   if (state.lastLanding) { state.lastLanding.t--; if (state.lastLanding.t <= 0) state.lastLanding = null; }
   // toast
   if (state.toast) { state.toast.t--; if (state.toast.t <= 0) state.toast = null; }
+  if (state.bigText) { state.bigText.t--; if (state.bigText.t <= 0) state.bigText = null; }   // R3-idee: anunț combo
 
   // round-over countdown
   if (state.roundOver) {
@@ -1546,6 +1555,18 @@ function drawToast() {
   ctx.textAlign = 'start'; ctx.globalAlpha = 1;
 }
 
+// R3-idee: anunț mare de combo (pulsează + se stinge)
+function drawBigText() {
+  if (!state.bigText) return;
+  const b = state.bigText, a = Math.min(1, b.t / 25), grow = 1 + (1 - Math.min(1, b.t / 90)) * 0.25;
+  ctx.save();
+  ctx.globalAlpha = a; ctx.textAlign = 'center';
+  ctx.font = 'bold ' + Math.round(46 * grow) + 'px Georgia';
+  ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.strokeText(b.msg, W / 2, H * 0.34);
+  ctx.fillStyle = '#ff8c2a'; ctx.fillText(b.msg, W / 2, H * 0.34);
+  ctx.textAlign = 'start'; ctx.globalAlpha = 1; ctx.restore();
+}
+
 function drawOffscreenTracker(x, y, kind, age) {
   if (x >= 0 && x <= W && y >= 0 && y <= H) return;
   const m = 26, ex = clamp(x, m, W - m), ey = clamp(y, m, H - m);
@@ -1595,6 +1616,7 @@ function render() {
   drawWindGauge();
   drawToast();
   drawRoundOverBanner();
+  drawBigText();   // R3-idee: anunț combo (DOUBLE!/RAMPAGE!...)
 }
 
 function loop() { step(); render(); syncSliders(); requestAnimationFrame(loop); }
@@ -1917,7 +1939,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v18';
+const APP_VERSION = 'v19';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

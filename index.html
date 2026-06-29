@@ -21,6 +21,7 @@
     font-family: 'Georgia', 'Times New Roman', serif;
     overflow-x: hidden;
     overflow-y: auto;            /* fallback: scroll dacă totuși nu încape */
+    min-height: 100vh;           /* fallback pt browsere pre-dvh (~înainte de 2022) */
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -41,6 +42,7 @@
     border-radius: 6px;
     box-shadow: 0 0 60px rgba(0,0,0,0.7), inset 0 0 80px rgba(0,0,0,0.3);
     /* responsiv: încape pe lățime ȘI pe înălțime (lasă ~210px pt controale). Raport 1100:540 ≈ 2.037 */
+    width: min(calc(100vw - 12px), calc((100vh - 210px) * 2.037));    /* fallback pre-dvh */
     width: min(calc(100vw - 12px), calc((100dvh - 210px) * 2.037));
     height: auto;
     max-width: 1100px;
@@ -163,11 +165,12 @@
   body.touch { gap: 0; padding: 0; justify-content: center; }
   body.touch h1, body.touch #status, body.touch #rankbar, body.touch #weapons, body.touch #hint,
   body.touch #lblAngle, body.touch #lblVel, body.touch #fire { display: none; }
-  body.touch canvas { width: min(100vw, calc(100dvh * 2.037)); height: min(calc(100vw / 2.037), 100dvh); max-width: none; border-width: 0; border-radius: 0; }
+  body.touch canvas { width: min(100vw, calc(100vh * 2.037)); height: min(calc(100vw / 2.037), 100vh); max-width: none; border-width: 0; border-radius: 0; }
+  body.touch canvas { width: min(100vw, calc(100dvh * 2.037)); height: min(calc(100vw / 2.037), 100dvh); }
 
   /* bară utilitare sus (refolosește #panel) */
   body.touch #panel {
-    position: fixed; top: 5px; left: 5px; right: auto; z-index: 30;
+    position: fixed; top: calc(5px + env(safe-area-inset-top, 0px)); left: calc(5px + env(safe-area-inset-left, 0px)); right: auto; z-index: 30;
     background: rgba(20,8,40,0.6); padding: 4px 7px; gap: 6px; font-size: 11px;
     border-radius: 18px; flex-wrap: nowrap; max-width: none;
   }
@@ -176,9 +179,9 @@
 
   /* slidere verticale */
   body.touch .vslider { display: block; position: fixed; top: 50%; transform: translateY(-50%);
-    left: 2px; width: 38px; height: min(48dvh, 250px); z-index: 25;
+    left: calc(2px + env(safe-area-inset-left, 0px)); width: 38px; height: min(48vh, 250px); height: min(48dvh, 250px); z-index: 25;
     background: rgba(10,5,22,0.34); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; touch-action: none; }
-  body.touch .vslider.right { left: auto; right: 2px; }
+  body.touch .vslider.right { left: auto; right: calc(2px + env(safe-area-inset-right, 0px)); }
   .vslider .vfill { position: absolute; left: 3px; right: 3px; bottom: 3px; border-radius: 11px;
     background: linear-gradient(0deg,#1f7fb8,#7fd0ff); opacity: 0.5; height: 50%; }
   .vslider.right .vfill { background: linear-gradient(0deg,#b85a1f,#ffb56b); }
@@ -194,14 +197,22 @@
   body.touch .fab { display: flex; align-items: center; justify-content: center; position: fixed; z-index: 30;
     border-radius: 50%; border: 2px solid rgba(255,255,255,0.35); color: #fff;
     background: linear-gradient(180deg,#ff7340,#d04820); box-shadow: 0 3px 10px rgba(0,0,0,0.5); }
-  body.touch #fireFab { width: 74px; height: 74px; font-size: 30px; bottom: 14px; left: 50%; transform: translateX(-50%); }
-  body.touch #wbtn { width: 60px; height: 60px; font-size: 28px; bottom: 20px; left: calc(50% - 104px);
+  body.touch #fireFab { width: 74px; height: 74px; font-size: 30px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); }
+  body.touch #wbtn { width: 60px; height: 60px; font-size: 28px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: calc(50% - 104px);
     background: linear-gradient(180deg,#5a3e6e,#3a2850); }
-  body.touch #fsbtn { width: 44px; height: 44px; font-size: 19px; top: 6px; right: 6px;
+  body.touch #fsbtn { width: 44px; height: 44px; font-size: 19px; top: calc(6px + env(safe-area-inset-top, 0px)); right: calc(6px + env(safe-area-inset-right, 0px));
     background: linear-gradient(180deg,#5a3e6e,#3a2850); }
-  body.touch #shareFab { width: 44px; height: 44px; font-size: 19px; top: 6px; right: 58px;
+  body.touch #shareFab { width: 44px; height: 44px; font-size: 19px; top: calc(6px + env(safe-area-inset-top, 0px)); right: calc(58px + env(safe-area-inset-right, 0px));
     background: linear-gradient(180deg,#5a3e6e,#3a2850); }
   #streak { color: #ff8c33; font-weight: 500; }
+
+  /* portret pe telefon → cere rotirea (jocul e landscape) */
+  #rotate { display: none; }
+  @media (orientation: portrait) {
+    body.touch #rotate { display: flex; position: fixed; inset: 0; z-index: 95;
+      background: #0a0418; color: #ffd700; align-items: center; justify-content: center;
+      text-align: center; font-size: 22px; line-height: 1.6; padding: 24px; }
+  }
 
   /* overlay alegere armă (tile-uri mari) */
   #woverlay { position: fixed; inset: 0; z-index: 50; background: rgba(5,2,12,0.82);
@@ -244,7 +255,7 @@
   .mchip.done { border-color: #5fbf6a; opacity: 0.65; }
   .mchip .mtxt { color: #ddd; font-size: 12px; }
   .mchip .mprog { color: #ffd700; font-size: 10px; }
-  body.touch #missions { position: fixed; top: 58px; right: 4px; left: auto; max-width: 42vw; z-index: 24; pointer-events: none;
+  body.touch #missions { position: fixed; top: calc(58px + env(safe-area-inset-top, 0px)); right: calc(4px + env(safe-area-inset-right, 0px)); left: auto; max-width: 42vw; z-index: 24; pointer-events: none;
     flex-direction: column; gap: 3px; justify-content: flex-start; align-items: flex-end; }
   body.touch .mchip { padding: 2px 6px; background: rgba(20,8,40,0.55); }
   body.touch .mchip .mtxt { font-size: 10px; } body.touch .mchip .mprog { font-size: 9px; }
@@ -289,6 +300,8 @@
   <span>📲 To install on your iPhone: tap <svg viewBox="0 0 50 50" width="17" height="17"><path d="M25 5 L25 32 M16 14 L25 5 L34 14" fill="none" stroke="#6cf" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 23 L9 23 L9 45 L41 45 L41 23 L36 23" fill="none" stroke="#6cf" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> <b>Share</b>, then <b>Add to Home Screen</b></span>
   <button id="iosInstallClose">Got it</button>
 </div>
+
+<div id="rotate">🔄 📱<br>Rotește telefonul pe orizontală<br>ca să joci</div>
 
 <div id="status">—</div>
 <div id="panel">
@@ -1745,6 +1758,16 @@ function aimEnd(e) {
 }
 canvas.addEventListener('pointerup', aimEnd);
 canvas.addEventListener('pointercancel', () => { aim = null; });
+// Compat: motoare fără Pointer Events (ex. iOS 12-) → mouse + touch în aceleași funcții
+if (!window.PointerEvent) {
+  const tp = e => (e.touches && e.touches[0]) ? e.touches[0] : e;
+  canvas.addEventListener('mousedown', e => { audioOn(); if (!aimAllowed()) return; aim = canvasPoint(e); aimUpdate(aim); });
+  canvas.addEventListener('mousemove', e => { if (!aim || !aimAllowed()) return; aim = canvasPoint(e); aimUpdate(aim); });
+  canvas.addEventListener('mouseup', aimEnd);
+  canvas.addEventListener('touchstart', e => { audioOn(); if (!aimAllowed()) return; e.preventDefault(); aim = canvasPoint(tp(e)); aimUpdate(aim); }, { passive: false });
+  canvas.addEventListener('touchmove', e => { if (!aim || !aimAllowed()) return; e.preventDefault(); aim = canvasPoint(tp(e)); aimUpdate(aim); }, { passive: false });
+  canvas.addEventListener('touchend', aimEnd);
+}
 
 // buton mod: 2 Jucători → Bot Ușor → Bot Mediu → Bot Greu (restart curat la schimbare)
 const MODES = [
@@ -1939,7 +1962,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v19';
+const APP_VERSION = 'v20';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

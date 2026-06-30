@@ -1338,6 +1338,8 @@ function stepShot(shot) {
     addCrater(shot.x, shot.y, 11);
     if (shot.age % 2 === 0) explode(shot.x, shot.y, 4, false);
     state.trail.push({ x: shot.x, y: shot.y, age: 0, color: w.color });
+    // Burghiul OMOARĂ gorila prin care trece în timp ce sapă (nu doar la detonarea finală adâncă)
+    if (gorillaHit(shot.x, shot.y) !== -1) { const k = detonate(shot, shot.x, shot.y); if (k.length) endRound(); return { survive: false, children: [] }; }
     if (shot.drillDepth >= w.drill || shot.y >= H - 20) {
       const k = detonate(shot, shot.x, Math.min(shot.y, H - 20)); if (k.length) endRound();
       return { survive: false, children: [] };
@@ -2307,7 +2309,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v24';
+const APP_VERSION = 'v25';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

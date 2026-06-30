@@ -639,13 +639,14 @@ const BIOMES = [
 ];
 
 // ════════════════════════ PROGRESSION (localStorage) ════════════════════════
+const AIM_FULL = 20;   // R1: la atâtea puncte traseul de ochire e COMPLET (apare ținta). Plafon: +2/victorie, -2/înfrângere.
 const PROFILE_KEY = 'gorillas_profile_v1';
 let profile = loadProfile();
 function loadProfile() {
   try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY));
     if (p && Number.isFinite(p.xp) && p.xp >= 0) {
       p.xp = Math.min(p.xp, 1e12);
-      if (!Number.isFinite(p.aim) || p.aim < 0) p.aim = 0; else p.aim = Math.min(p.aim, 1e6);  // R1: puncte de traiectorie (cu plafon)
+      if (!Number.isFinite(p.aim) || p.aim < 0) p.aim = 0; else p.aim = Math.min(p.aim, AIM_FULL);  // R1: puncte traseu, plafonat la COMPLET
       if (!Array.isArray(p.missions)) p.missions = [];          // misiuni active (R4)
       if (!Number.isFinite(p.coins) || p.coins < 0) p.coins = 0; else p.coins = Math.min(p.coins, 1e9);  // monedă (shop)
       if (typeof p.skin !== 'string') p.skin = 'default';        // skin echipat
@@ -1438,8 +1439,8 @@ function endRound() {
     if (localWon) {
       // R1: +2 puncte de traiectorie la FIECARE rundă câștigată (ai omorât cealaltă maimuță), nu doar la meci.
       // Pleci de la 0 (fără traseu/țintă); cu fiecare kill traseul crește, până apare complet + ținta.
-      profile.aim = (profile.aim || 0) + 2; saveProfile(); refreshProgressUI();
-      showToast('🎯 +2 trajectory! (aim ' + profile.aim + ')', 160);
+      profile.aim = Math.min(AIM_FULL, (profile.aim || 0) + 2); saveProfile(); refreshProgressUI();
+      showToast(profile.aim >= AIM_FULL ? '🎯 Aim line COMPLETE — target locked!' : ('🎯 +2 trajectory (' + profile.aim + '/' + AIM_FULL + ')'), 160);
       missionEvent('roundWin'); if (state.weather && state.weather.id === 'wind') missionEvent('windWin');
       // R3-idee: COMBO de victorii consecutive → anunț mare + bonus XP (mai mult haz, reward loop)
       winRun++;
@@ -1451,7 +1452,7 @@ function endRound() {
       // R1: -2 puncte de traiectorie la FIECARE rundă pierdută (minim 0) — simetric cu +2 la victorie.
       const before = profile.aim || 0;
       profile.aim = Math.max(0, before - 2); saveProfile(); refreshProgressUI();
-      if (before > 0) showToast('🎯 -2 trajectory (aim ' + profile.aim + ')', 160);
+      if (before > 0) showToast(before >= AIM_FULL ? '🎯 -2 trajectory — target lost (' + profile.aim + '/' + AIM_FULL + ')' : ('🎯 -2 trajectory (' + profile.aim + '/' + AIM_FULL + ')'), 160);
     }
     awardXp(localWon ? 75 : 10); // R-audit L1: XP plin doar la victorie locală; înfrângere = consolare mică
     sfxWin();
@@ -1948,7 +1949,8 @@ function drawTrajectoryPreview() {
   if (!traj) return;
   const pts = traj.pts;
   const maxDots = Math.floor(pts.length / PREVIEW_SPACING);
-  const dots = Math.min(maxDots, aimDots);
+  const complete = aimDots >= AIM_FULL;          // traseul e COMPLET (mastery) → linie întreagă + ȚINTĂ
+  const dots = complete ? maxDots : Math.min(maxDots, aimDots);
   const limit = dots * PREVIEW_SPACING;
   ctx.save();
   for (let i = 0; i < limit; i += PREVIEW_SPACING) {
@@ -1958,8 +1960,8 @@ function drawTrajectoryPreview() {
     ctx.beginPath(); ctx.arc(p.x, p.y, 2.3, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
-  // marker de aterizare DOAR dacă aim-ul ajunge până la capăt (recompensă pentru mulți câștigați)
-  if (dots >= maxDots && traj.landing) {
+  // ȚINTA apare DOAR când traseul e complet (aim == AIM_FULL). La o înfrângere (-2) scade sub prag → dispare ținta.
+  if (complete && traj.landing) {
     const l = traj.landing;
     const color = l.kind === 'enemy' ? '#33ff66' : (l.kind === 'self' ? '#ff4444' : (l.kind === 'air' ? '#ffcf33' : (l.kind === 'rot' ? '#8a5a2a' : '#ffffff')));
     ctx.strokeStyle = color; ctx.lineWidth = 2;
@@ -2501,7 +2503,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v31';
+const APP_VERSION = 'v32';
 (function () {
   const v = document.getElementById('ver'); if (!v) return;
   v.textContent = 'Gorillas ' + APP_VERSION + ' ⟳';

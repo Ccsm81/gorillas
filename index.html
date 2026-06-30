@@ -296,6 +296,22 @@
   body.compact-ui #tut.show { padding: 6px; align-items: flex-start; }
   body.compact-ui .tutbox { padding: 12px 16px; font-size: 13px; line-height: 1.4; }
   body.compact-ui .tutbig { font-size: 26px; margin-bottom: 2px; }
+  /* How to Play guide */
+  .hbody { text-align: left; font-size: 13.5px; line-height: 1.5; color: #e8def5; }
+  .hh { color: #ffd700; font-weight: 700; font-size: 14.5px; margin: 14px 0 5px; }
+  .hp { margin: 4px 0; }
+  .hul { margin: 4px 0; padding-left: 18px; }
+  .hul li { margin: 3px 0; }
+  .hbody b { color: #fff; }
+  .wlist { display: flex; flex-direction: column; gap: 5px; margin: 6px 0; }
+  .wrow { display: flex; gap: 8px; align-items: flex-start; background: #211038; border: 1px solid #3a2752; border-radius: 8px; padding: 6px 8px; }
+  .wic { font-size: 18px; flex: 0 0 auto; width: 22px; text-align: center; }
+  .wmeta { flex: 1 1 auto; min-width: 0; }
+  .wnm { color: #ffe680; font-weight: 700; }
+  .wun { color: #8fd0ff; font-size: 11px; margin-left: 6px; }
+  .wds { color: #cdbbe0; font-size: 12px; }
+  body.compact-ui .hbody { font-size: 12px; line-height: 1.45; }
+  body.compact-ui .wlist { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
   .tutsub { font-size: 12px; color: #cbb8e0; }
   #tutClose { margin-top: 14px; padding: 10px 18px; font-size: 15px; }
 
@@ -343,6 +359,83 @@
   <button id="setClose" class="oclose">Close</button>
 </div></div>
 
+<!-- How to Play (full guide) -->
+<div id="howOverlay" class="hidden ovl"><div class="osheet">
+  <div class="otitle">❓ How to Play</div>
+  <div class="hbody">
+
+    <div class="hh">🎯 Goal</div>
+    <p class="hp">Two gorillas stand on a city skyline and take turns throwing exploding bananas. Hit the other gorilla to win the <b>round</b>. The first player to <b>5 round wins</b> takes the <b>match</b>.</p>
+
+    <div class="hh">🕹️ Controls</div>
+    <ul class="hul">
+      <li><b>Drag</b> from your gorilla toward where you want to throw — a longer drag = more power. Release to throw.</li>
+      <li>Or type the <b>Angle</b> and <b>Power</b> numbers and press <b>Throw</b>.</li>
+      <li>Keyboard: <b>↑/↓</b> angle, <b>←/→</b> power, <b>Enter</b> throw, <b>[ ]</b> change weapon, <b>P</b> toggle aim line. Hold <b>Shift</b> for bigger steps.</li>
+    </ul>
+
+    <div class="hh">🎯 The aim line — you earn it</div>
+    <ul class="hul">
+      <li>The dotted line shows your shot's path. You start with <b>no</b> aim line at all.</li>
+      <li><b>+2 dots</b> for every round you <b>win</b>; <b>−2 dots</b> for every round you <b>lose</b> (never below zero).</li>
+      <li>Once the dots reach all the way to the landing point, a <b>target marker</b> appears — full aiming help. Keep winning to get there.</li>
+      <li>The <b>🎯 Bullseye</b> power-up gives you a full aim line for a single shot.</li>
+    </ul>
+
+    <div class="hh">⭐ XP &amp; Ranks — how you unlock weapons</div>
+    <ul class="hul">
+      <li>Earn XP: <b>win a round +75</b>, lose a round +10, <b>pop a balloon +15</b>, win-streak combos give bonus XP, and missions give +10 to +30.</li>
+      <li>XP raises your <b>Rank</b>. Every new rank <b>unlocks the next weapon</b>.</li>
+      <li>XP needed to reach a rank = <b>20·r² + 80·r</b> → Rank 1 = 100 XP, Rank 2 = 240, Rank 3 = 420, Rank 4 = 640 … Rank 12 = 3840 (everything unlocked).</li>
+      <li>The weapon bar shows what you own; locked weapons display the rank you need.</li>
+    </ul>
+
+    <div class="hh">🔫 Weapons — role &amp; when to use</div>
+    <div id="howWeapons" class="wlist"></div>
+
+    <div class="hh">🌦️ Weather — and how it's kept fair</div>
+    <p class="hp">In single-player, weather is tied to your progress so you never face an effect you can't counter: <b>Rank 0–1</b> is always Clear; <b>Rank 2+</b> can bring Strong Wind (you'll already own the wind-proof Heavy Ball); <b>Rank 4+</b> adds Hail; <b>Rank 6+</b> adds Heat. Online and Daily use the <b>same</b> weather for both players.</p>
+    <div id="howWeather" class="wlist"></div>
+
+    <div class="hh">📦 Power-ups (single-player)</div>
+    <ul class="hul">
+      <li>A wooden crate floats across the screen. Hit it with a shot to grab a power-up for your <b>next</b> throw:</li>
+      <li><b>💥 Big Shot</b> — a much bigger blast.</li>
+      <li><b>🎯 Bullseye</b> — a full aim line for that shot.</li>
+    </ul>
+
+    <div class="hh">🎈 Balloons</div>
+    <p class="hp">A balloon drifts past now and then. Hit it for <b>+15 XP and +2 coins</b> — a free way to level up and collect coins.</p>
+
+    <div class="hh">🪙 Coins &amp; Skins</div>
+    <ul class="hul">
+      <li>Earn coins: <b>+3</b> per round win, <b>+2</b> per balloon, <b>+10</b> per achievement, plus mission rewards.</li>
+      <li>Spend them in the <b>🛍️ Shop</b> on character skins — Robot, Dragon, Alien, Ice, Panda, Capybara, Llama, Golden. Skins are cosmetic and <b>raise their arms when you win</b>.</li>
+    </ul>
+
+    <div class="hh">📋 Missions</div>
+    <p class="hp">You always have <b>3 missions</b> (e.g. win rounds, pop balloons, win a round in the wind). Completing one gives XP + coins and a fresh mission appears.</p>
+
+    <div class="hh">🏆 Achievements</div>
+    <p class="hp">Goals that grant <b>+10 coins</b> each: First Blood, 10 Wins, 50 Wins, 5 in a Row, Balloon Hunter, Arsenal Master (all weapons), Fashionista (all skins).</p>
+
+    <div class="hh">👥 Game modes</div>
+    <ul class="hul">
+      <li><b>👥 2 Players</b> — pass-and-play on one device. Tap it again to switch to <b>🤖 Bot: Easy / Medium / Hard</b>.</li>
+      <li><b>🌐 Online</b> — play a friend over the internet; share the room code.</li>
+      <li><b>📅 Daily Challenge</b> — the same map &amp; weather for everyone that day.</li>
+    </ul>
+
+    <div class="hh">🔥 Daily streak &amp; saving</div>
+    <ul class="hul">
+      <li>Play at least one match each day to grow your <b>🔥 streak</b>.</li>
+      <li>Everything (XP, aim, coins, skins) is saved on <b>this device</b>. Use <b>Settings → Export/Import</b> to back up or move your progress, or <b>Reset progress</b> to start fresh.</li>
+    </ul>
+
+  </div>
+  <button id="howClose" class="oclose">Got it!</button>
+</div></div>
+
 <!-- First-run tutorial -->
 <div id="tut"><div class="tutbox">
   <div class="tutbig">👆🎯</div>
@@ -384,6 +477,7 @@
   <button id="sound" class="sec">🔊 Sound</button>
   <button id="music" class="sec">🎵 Music: off</button>
   <button id="preview" class="sec">🎯 Aim: ON</button>
+  <button id="howto" class="sec">❓ How to Play</button>
   <button id="shop" class="sec">🛍️ Shop</button>
   <button id="settings" class="sec">⚙️</button>
   <button id="reset" class="sec">Restart match</button>
@@ -791,6 +885,27 @@ function drawCrate() {
 // ════════════════════════ SETTINGS + EXPORT/IMPORT PROFIL ════════════════════════
 function openSettings() { updateCompactUI(); audioOn(); const v = document.getElementById('setVol'); if (v) v.value = Math.round(masterVol() * 100); const m = document.getElementById('setMusic'); if (m) m.checked = !!profile.settings.music; const o = document.getElementById('setOverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
 function closeSettings() { const o = document.getElementById('setOverlay'); o.classList.add('hidden'); o.style.display = 'none'; }
+// How to Play — listele de arme/vreme sunt generate din WEAPONS/WEATHERS (mereu corecte, fără hardcodare)
+function buildHowTo() {
+  const wl = document.getElementById('howWeapons');
+  if (wl && !wl.dataset.built) {
+    wl.innerHTML = WEAPONS.map(w => {
+      const un = w.rank === 0 ? 'Unlocked at start' : 'Rank ' + w.rank;
+      return '<div class="wrow"><div class="wic">' + w.icon + '</div><div class="wmeta">'
+        + '<span class="wnm">' + w.name + '</span><span class="wun">' + un + '</span>'
+        + '<div class="wds">' + w.desc + '</div></div></div>';
+    }).join('');
+    wl.dataset.built = '1';
+  }
+  const we = document.getElementById('howWeather');
+  if (we && !we.dataset.built) {
+    we.innerHTML = WEATHERS.map(x => '<div class="wrow"><div class="wic">' + x.icon + '</div><div class="wmeta">'
+      + '<span class="wnm">' + x.name + '</span><div class="wds">' + x.effect + '</div></div></div>').join('');
+    we.dataset.built = '1';
+  }
+}
+function openHowTo() { updateCompactUI(); audioOn(); buildHowTo(); const o = document.getElementById('howOverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
+function closeHowTo() { const o = document.getElementById('howOverlay'); o.classList.add('hidden'); o.style.display = 'none'; }
 function exportProfile() {
   try {
     const code = btoa(unescape(encodeURIComponent(JSON.stringify(profile))));
@@ -2212,6 +2327,10 @@ document.getElementById('setMusic').addEventListener('change', e => { audioOn();
 document.getElementById('setExport').addEventListener('click', exportProfile);
 document.getElementById('setImport').addEventListener('click', importProfile);
 document.getElementById('setReset').addEventListener('click', resetProfile);
+// How to Play
+document.getElementById('howto').addEventListener('click', openHowTo);
+document.getElementById('howClose').addEventListener('click', closeHowTo);
+document.getElementById('howOverlay').addEventListener('click', e => { if (e.target.id === 'howOverlay') closeHowTo(); });
 
 document.addEventListener('keydown', (e) => {
   const tag = (e.target.tagName || '').toLowerCase();
@@ -2382,7 +2501,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v30';
+const APP_VERSION = 'v31';
 (function () {
   const v = document.getElementById('ver'); if (!v) return;
   v.textContent = 'Gorillas ' + APP_VERSION + ' ⟳';

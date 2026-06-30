@@ -233,7 +233,7 @@
   #wclose { display: block; width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; }
 
   /* ── lobby online ── */
-  #ver { position: fixed; bottom: 2px; left: 5px; font-size: 10px; color: rgba(255,255,255,0.4); z-index: 5; pointer-events: none; }
+  #ver { position: fixed; bottom: 2px; left: 5px; font-size: 10px; color: rgba(255,255,255,0.45); z-index: 70; cursor: pointer; padding: 4px 6px; -webkit-tap-highlight-color: transparent; }
   #lobby { display: none; position: fixed; inset: 0; z-index: 60; background: rgba(5,2,12,0.85); align-items: center; justify-content: center; padding: 16px; }
   #lobby:not(.hidden) { display: flex; }
   #lsheet { background: #1a0d2e; border: 1px solid #5a3e6e; border-radius: 14px; padding: 18px; max-width: 380px; width: 100%; text-align: center; }
@@ -2368,8 +2368,19 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v26';
-(function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
+const APP_VERSION = 'v29';
+(function () {
+  const v = document.getElementById('ver'); if (!v) return;
+  v.textContent = 'Gorillas ' + APP_VERSION + ' ⟳';
+  // tap pe versiune = FORCE UPDATE: șterge tot cache-ul + service worker + reîncarcă proaspăt
+  v.addEventListener('click', async () => {
+    v.textContent = 'updating…';
+    try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } } catch (e) {}
+    try { if (navigator.serviceWorker) { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())); } } catch (e) {}
+    const u = location.origin + location.pathname + '?v=' + APP_VERSION + '_' + (location.search ? '1' : '0');
+    location.replace(u);
+  });
+})();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)
 if ('serviceWorker' in navigator) {

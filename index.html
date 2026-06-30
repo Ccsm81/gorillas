@@ -1196,6 +1196,9 @@ function init(keepScores) {
     ambient: [], ambientType: biome.ambient, terrain: biome.terrain, biomeName: biome.name,
     bolts: [], vortex: null, balloon: null, balloonCool: 240,
     crate: null, crateCool: 300, buff: null, bigText: null,
+    // aim de traseu PER JUCĂTOR (ca să dispară ținta când PIERDE oricare jucător, inclusiv în 2-player).
+    // Local player poartă progresul salvat (profile.aim); în 2-player ambii copii pornesc de la aceeași valoare.
+    aimP: (() => { const me = mpActive ? localPlayer : 0, base = profile.aim | 0, a = [0, 0]; a[me] = base; if (!mpActive && botPlayer < 0) a[1 - me] = base; return a; })(),
     roundOver: false,
     overTimer: 0,
     overMsg: '',
@@ -1436,24 +1439,29 @@ function endRound() {
     } else {
       state.overMsg = `${who} wins the round  (${scores[0]}–${scores[1]})`;
     }
+    const meIdx = mySkinIdx(), aimBefore = Array.isArray(state.aimP) ? (state.aimP[meIdx] | 0) : (profile.aim | 0);
     if (localWon) {
-      // R1: +2 puncte de traiectorie la FIECARE rundă câștigată (ai omorât cealaltă maimuță), nu doar la meci.
-      // Pleci de la 0 (fără traseu/țintă); cu fiecare kill traseul crește, până apare complet + ținta.
-      profile.aim = Math.min(AIM_FULL, (profile.aim || 0) + 2); saveProfile(); refreshProgressUI();
-      showToast(profile.aim >= AIM_FULL ? '🎯 Aim line COMPLETE — target locked!' : ('🎯 +2 trajectory (' + profile.aim + '/' + AIM_FULL + ')'), 160);
       missionEvent('roundWin'); if (state.weather && state.weather.id === 'wind') missionEvent('windWin');
       // R3-idee: COMBO de victorii consecutive → anunț mare + bonus XP (mai mult haz, reward loop)
       winRun++;
       const COMBO = { 2: 'DOUBLE!', 3: 'TRIPLE!', 4: 'RAMPAGE!', 5: 'UNSTOPPABLE!', 7: 'GODLIKE!', 10: 'LEGENDARY!' };
       if (COMBO[winRun]) { const bonus = winRun * 5; awardXp(bonus); state.bigText = { msg: '🔥 ' + COMBO[winRun] + '  +' + bonus + ' XP', t: 110 }; state.flash = Math.max(state.flash, 0.5); }
       awardCoins(3); bumpStat('wins'); setStatMax('bestStreak', winRun); checkAch();   // monedă + recorduri + achievements
+    } else { winRun = 0; }
+    // R1: aim de traseu PER JUCĂTOR — câștigătorul +2 (plafon AIM_FULL), învinsul -2 (minim 0).
+    // Așa ținta DISPARE când pierde ORICARE jucător (inclusiv ambii copii în 2-player), nu doar omul local.
+    if (Array.isArray(state.aimP)) {
+      const loser = 1 - winner;
+      state.aimP[winner] = Math.min(AIM_FULL, (state.aimP[winner] | 0) + 2);
+      state.aimP[loser]  = Math.max(0, (state.aimP[loser] | 0) - 2);
+      profile.aim = state.aimP[meIdx] | 0; saveProfile();
     } else {
-      winRun = 0;
-      // R1: -2 puncte de traiectorie la FIECARE rundă pierdută (minim 0) — simetric cu +2 la victorie.
-      const before = profile.aim || 0;
-      profile.aim = Math.max(0, before - 2); saveProfile(); refreshProgressUI();
-      if (before > 0) showToast(before >= AIM_FULL ? '🎯 -2 trajectory — target lost (' + profile.aim + '/' + AIM_FULL + ')' : ('🎯 -2 trajectory (' + profile.aim + '/' + AIM_FULL + ')'), 160);
+      profile.aim = localWon ? Math.min(AIM_FULL, (profile.aim || 0) + 2) : Math.max(0, (profile.aim || 0) - 2); saveProfile();
     }
+    refreshProgressUI();
+    const aimNow = profile.aim | 0;
+    if (winner === meIdx) showToast(aimNow >= AIM_FULL ? '🎯 Aim line COMPLETE — target locked!' : ('🎯 +2 trajectory (' + aimNow + '/' + AIM_FULL + ')'), 150);
+    else if (aimBefore > 0) showToast(aimBefore >= AIM_FULL ? '🎯 Target lost — win it back (' + aimNow + '/' + AIM_FULL + ')' : ('🎯 -2 trajectory (' + aimNow + '/' + AIM_FULL + ')'), 150);
     awardXp(localWon ? 75 : 10); // R-audit L1: XP plin doar la victorie locală; înfrângere = consolare mică
     sfxWin();
   } else {
@@ -1943,7 +1951,8 @@ function drawTrajectoryPreview() {
   if (previewMode === 0) return;                 // OFF
   // power-up "Bullseye": preview COMPLET o tură pt jucătorul care l-a luat (doar single-player)
   const bullseye = state.buff && state.buff.player === state.turn && state.buff.id === 'aim';
-  const aimDots = bullseye ? 1e9 : (profile.aim | 0);
+  // aim PER JUCĂTOR (ținta apare/dispare pentru fiecare jucător după propriile victorii/înfrângeri)
+  const aimDots = bullseye ? 1e9 : (Array.isArray(state.aimP) ? (state.aimP[state.turn] | 0) : (profile.aim | 0));
   if (aimDots <= 0) return;                       // încă n-a câștigat puncte de traseu → fără ajutor (skill pur)
   const traj = computeTrajectory();
   if (!traj) return;
@@ -2503,7 +2512,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v32';
+const APP_VERSION = 'v33';
 (function () {
   const v = document.getElementById('ver'); if (!v) return;
   v.textContent = 'Gorillas ' + APP_VERSION + ' ⟳';

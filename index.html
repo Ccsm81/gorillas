@@ -325,6 +325,8 @@
   <div class="orow2">Backup / restore progress (paste a code to restore):</div>
   <textarea id="setCode" placeholder="backup code…" rows="2"></textarea>
   <div class="orow"><button id="setExport" class="sec">📤 Export</button> <button id="setImport" class="sec">📥 Import</button></div>
+  <div class="orow2" style="opacity:.7;margin-top:10px">Aim, XP, coins &amp; skins are saved on THIS device. Reset to start fresh (e.g. a new player):</div>
+  <div class="orow"><button id="setReset" class="sec" style="background:#7a2230">🗑️ Reset progress</button></div>
   <button id="setClose" class="oclose">Close</button>
 </div></div>
 
@@ -780,6 +782,13 @@ function importProfile() {
     if (p && Number.isFinite(p.xp)) { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); showToast('✅ Imported — reloading…', 200); setTimeout(() => location.reload(), 700); }
     else showToast('❌ Invalid code', 150);
   } catch (e) { showToast('❌ Invalid code', 150); }
+}
+function resetProfile() {
+  const ok = (typeof confirm === 'function') ? confirm('Reset ALL progress?\n\nThis erases aim, XP, coins and unlocked skins on this device. It cannot be undone.\n\n(Tip: tap Export first to keep a backup code.)') : true;
+  if (!ok) return;
+  try { localStorage.removeItem(PROFILE_KEY); } catch (e) {}
+  showToast('🗑️ Progress reset — reloading…', 200);
+  setTimeout(() => location.reload(), 700);
 }
 
 // ════════════════════════ TUTORIAL (prima rulare) ════════════════════════
@@ -2140,6 +2149,7 @@ document.getElementById('setVol').addEventListener('change', () => { audioOn(); 
 document.getElementById('setMusic').addEventListener('change', e => { audioOn(); profile.settings.music = !!e.target.checked; saveProfile(); if (profile.settings.music) musicStart(); else musicStop(); updateMusicBtn(); });
 document.getElementById('setExport').addEventListener('click', exportProfile);
 document.getElementById('setImport').addEventListener('click', importProfile);
+document.getElementById('setReset').addEventListener('click', resetProfile);
 
 document.addEventListener('keydown', (e) => {
   const tag = (e.target.tagName || '').toLowerCase();

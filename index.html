@@ -1404,8 +1404,9 @@ function stepShot(shot) {
     return { survive: false, children: [] };
   }
 
-  // building
-  if (inFrameX && shot.age > 5 && inBuilding(shot.x, shot.y) && !inAnyCrater(shot.x, shot.y)) {
+  // building — napalmul (lipicios/incendiar) explodează la AMPRENTA clădirii, chiar dacă acolo e o
+  // gaură veche (nu tunelează); armele de precizie (sniper/banană) trec prin găuri ca tactică.
+  if (inFrameX && shot.age > 5 && inBuilding(shot.x, shot.y) && (w.effect === 'napalm' || !inAnyCrater(shot.x, shot.y))) {
     if (w.effect === 'drill') { shot.drilling = true; shot.vx *= 0.15; addCrater(shot.x, shot.y, 11); return { survive: true, children: [] }; }
     if (w.effect === 'roller') { shot.rolling = true; shot.vy = 0; shot.vx = (shot.vx >= 0 ? 1 : -1) * 4.5; shot.rollLeft = w.roll; shot.y -= 6; return { survive: true, children: [] }; }
     if (w.effect === 'bouncer' && shot.bounces > 0) {
@@ -2309,7 +2310,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v25';
+const APP_VERSION = 'v26';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

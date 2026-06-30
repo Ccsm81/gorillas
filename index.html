@@ -274,9 +274,7 @@
   #shopGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .stile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; background: #251640; border: 2px solid #4a3060; border-radius: 10px; cursor: pointer; user-select: none; }
   .stile.sel { border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.4); }
-  .sgor { position: relative; width: 34px; height: 40px; }
-  .sgor .sg-b { position: absolute; left: 7px; top: 9px; width: 20px; height: 26px; border-radius: 50%; }
-  .sgor .sg-f { position: absolute; left: 12px; top: 4px; width: 10px; height: 12px; border-radius: 50%; }
+  .sgor { width: 50px; height: 56px; display: block; }
   .snm { font-size: 11px; color: #ddd; }
   .sbtn { font-size: 11px; color: #ffd24a; }
   .stile.sel .sbtn { color: #7affb0; }
@@ -697,9 +695,11 @@ function buildShop() {
   for (const s of SKINS) {
     const owned = profile.owned.indexOf(s.id) >= 0, equipped = profile.skin === s.id;
     const tile = document.createElement('div'); tile.className = 'stile' + (equipped ? ' sel' : '');
-    tile.innerHTML = '<div class="sgor"><span class="sg-b" style="background:' + s.body + '"></span><span class="sg-f" style="background:' + s.face + '"></span></div>' +
-      '<div class="snm">' + s.name + '</div>' +
-      '<div class="sbtn">' + (equipped ? '✓ Equipped' : owned ? 'Equip' : '🪙 ' + s.cost) + '</div>';
+    const cv = document.createElement('canvas'); cv.width = 50; cv.height = 56; cv.className = 'sgor';
+    const c2 = cv.getContext('2d'); if (c2) { c2.save(); c2.translate(25, 42); c2.scale(0.62, 0.62); drawCharacter(c2, s.id, 0, 0, 0, 0); c2.restore(); }
+    const nm = document.createElement('div'); nm.className = 'snm'; nm.textContent = s.name;
+    const bt = document.createElement('div'); bt.className = 'sbtn'; bt.textContent = equipped ? '✓ Equipped' : owned ? 'Equip' : '🪙 ' + s.cost;
+    tile.appendChild(cv); tile.appendChild(nm); tile.appendChild(bt);
     tile.addEventListener('click', () => {
       sfxClick();
       if (equipped) return;
@@ -1609,27 +1609,112 @@ function drawSkyline() {
   sctx.restore();
 }
 
+// ════════════════════════ PERSONAJE (skin = creatură distinctă, nu doar culoare) ════════════════════════
+const TAU = Math.PI * 2;
+function drawGorillaBody(c, x, y, sk, lUp, rUp) {
+  c.fillStyle = sk.body;
+  c.beginPath(); c.ellipse(x, y - 2, 13, 14, 0, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x, y - 20, 11, 12, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.limb;
+  c.beginPath(); c.ellipse(x - 14, y - 1 - lUp * 28, 5, 9, 0, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x + 14, y - 1 - rUp * 28, 5, 9, 0, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x - 7, y + 14, 6, 8, 0, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x + 7, y + 14, 6, 8, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.face;
+  c.beginPath(); c.ellipse(x, y - 17, 7, 8, 0, 0, TAU); c.fill();
+  c.fillStyle = '#fff'; c.fillRect(x - 4, y - 20, 2, 2); c.fillRect(x + 2, y - 20, 2, 2);
+  c.fillStyle = '#000'; c.fillRect(x - 3, y - 20, 1, 1); c.fillRect(x + 3, y - 20, 1, 1);
+  c.strokeStyle = '#000'; c.lineWidth = 1; c.beginPath(); c.moveTo(x - 3, y - 14); c.lineTo(x + 3, y - 14); c.stroke();
+  c.fillStyle = 'rgba(180,140,100,0.25)'; c.fillRect(x - 6, y - 6, 12, 6);
+}
+function drawGoldGorilla(c, x, y, sk, lUp, rUp) {
+  drawGorillaBody(c, x, y, sk, lUp, rUp);
+  c.fillStyle = '#ffe680'; c.beginPath();
+  c.moveTo(x - 7, y - 29); c.lineTo(x - 7, y - 35); c.lineTo(x - 3.5, y - 31); c.lineTo(x, y - 37); c.lineTo(x + 3.5, y - 31); c.lineTo(x + 7, y - 35); c.lineTo(x + 7, y - 29); c.closePath(); c.fill();
+  c.strokeStyle = '#9c7a17'; c.lineWidth = 0.6; c.stroke();
+  c.fillStyle = '#fff'; c.globalAlpha = 0.85; c.fillRect(x + 7, y - 24, 1.6, 1.6); c.fillRect(x - 9, y - 12, 1.4, 1.4); c.globalAlpha = 1;
+}
+function drawRobot(c, x, y, sk) {
+  c.fillStyle = sk.limb; c.fillRect(x - 16, y - 8, 5, 17); c.fillRect(x + 11, y - 8, 5, 17); c.fillRect(x - 8, y + 11, 6, 9); c.fillRect(x + 2, y + 11, 6, 9);
+  c.fillStyle = sk.body; c.fillRect(x - 11, y - 12, 22, 25);
+  c.fillRect(x - 9, y - 30, 18, 15);
+  c.strokeStyle = sk.limb; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y - 30); c.lineTo(x, y - 36); c.stroke();
+  c.fillStyle = '#ff5'; c.beginPath(); c.arc(x, y - 37, 2.4, 0, TAU); c.fill();
+  c.fillStyle = '#0ff'; c.fillRect(x - 6, y - 25, 4, 4); c.fillRect(x + 2, y - 25, 4, 4);
+  c.fillStyle = '#0aa'; c.fillRect(x - 5, y - 19, 10, 2.5);
+  c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 1; c.strokeRect(x - 6, y - 6, 12, 11);
+}
+function drawDragon(c, x, y, sk) {
+  c.strokeStyle = sk.body; c.lineWidth = 5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x + 7, y + 8); c.quadraticCurveTo(x + 22, y + 7, x + 19, y - 7); c.stroke(); c.lineCap = 'butt';
+  c.fillStyle = sk.limb;
+  c.beginPath(); c.moveTo(x - 3, y - 9); c.lineTo(x - 21, y - 22); c.lineTo(x - 5, y - 1); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(x + 3, y - 9); c.lineTo(x + 21, y - 22); c.lineTo(x + 5, y - 1); c.closePath(); c.fill();
+  c.fillStyle = sk.body; c.beginPath(); c.ellipse(x, y - 2, 12, 14, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.face; c.beginPath(); c.ellipse(x, y + 2, 6.5, 9, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.body; c.beginPath(); c.ellipse(x - 6, y + 14, 5, 7, 0, 0, TAU); c.fill(); c.beginPath(); c.ellipse(x + 6, y + 14, 5, 7, 0, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x, y - 19, 9, 8.5, 0, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x, y - 16, 6.5, 4.5, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.face;
+  c.beginPath(); c.moveTo(x - 6, y - 25); c.lineTo(x - 8, y - 33); c.lineTo(x - 3, y - 26); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(x + 6, y - 25); c.lineTo(x + 8, y - 33); c.lineTo(x + 3, y - 26); c.closePath(); c.fill();
+  c.fillStyle = '#ffe04a'; c.beginPath(); c.arc(x - 4, y - 20, 2.4, 0, TAU); c.fill(); c.beginPath(); c.arc(x + 4, y - 20, 2.4, 0, TAU); c.fill();
+  c.fillStyle = '#000'; c.fillRect(x - 4.7, y - 22, 1.4, 4); c.fillRect(x + 3.3, y - 22, 1.4, 4);
+  c.fillRect(x - 2, y - 14, 1.4, 1.4); c.fillRect(x + 0.6, y - 14, 1.4, 1.4);
+}
+function drawAlien(c, x, y, sk) {
+  c.strokeStyle = sk.limb; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x - 5, y - 2); c.lineTo(x - 12, y + 6); c.stroke();
+  c.beginPath(); c.moveTo(x + 5, y - 2); c.lineTo(x + 12, y + 6); c.stroke();
+  c.beginPath(); c.moveTo(x - 3, y + 10); c.lineTo(x - 6, y + 20); c.stroke();
+  c.beginPath(); c.moveTo(x + 3, y + 10); c.lineTo(x + 6, y + 20); c.stroke(); c.lineCap = 'butt';
+  c.fillStyle = sk.body; c.beginPath(); c.ellipse(x, y + 1, 7, 13, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.face; c.beginPath(); c.ellipse(x, y - 18, 11, 13, 0, 0, TAU); c.fill();
+  c.fillStyle = '#000';
+  c.save(); c.translate(x - 5, y - 18); c.rotate(0.5); c.beginPath(); c.ellipse(0, 0, 2.4, 5, 0, 0, TAU); c.fill(); c.restore();
+  c.save(); c.translate(x + 5, y - 18); c.rotate(-0.5); c.beginPath(); c.ellipse(0, 0, 2.4, 5, 0, 0, TAU); c.fill(); c.restore();
+}
+function drawPanda(c, x, y, sk) {
+  c.fillStyle = sk.body; c.beginPath(); c.ellipse(x, y - 2, 12, 14, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.limb; c.beginPath(); c.arc(x - 8, y - 28, 4, 0, TAU); c.fill(); c.beginPath(); c.arc(x + 8, y - 28, 4, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x - 13, y - 1, 5, 9, 0, 0, TAU); c.fill(); c.beginPath(); c.ellipse(x + 13, y - 1, 5, 9, 0, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x - 7, y + 14, 6, 8, 0, 0, TAU); c.fill(); c.beginPath(); c.ellipse(x + 7, y + 14, 6, 8, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.body; c.beginPath(); c.ellipse(x, y - 20, 11, 11, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.limb;
+  c.save(); c.translate(x - 4, y - 20); c.rotate(0.4); c.beginPath(); c.ellipse(0, 0, 3, 4, 0, 0, TAU); c.fill(); c.restore();
+  c.save(); c.translate(x + 4, y - 20); c.rotate(-0.4); c.beginPath(); c.ellipse(0, 0, 3, 4, 0, 0, TAU); c.fill(); c.restore();
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(x - 4, y - 20, 1.3, 0, TAU); c.fill(); c.beginPath(); c.arc(x + 4, y - 20, 1.3, 0, TAU); c.fill();
+  c.fillStyle = sk.limb; c.beginPath(); c.arc(x, y - 15, 1.6, 0, TAU); c.fill();
+}
+function drawIce(c, x, y, sk) {
+  c.fillStyle = sk.limb; c.beginPath(); c.ellipse(x - 13, y - 1, 5, 9, 0, 0, TAU); c.fill(); c.beginPath(); c.ellipse(x + 13, y - 1, 5, 9, 0, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x - 7, y + 14, 6, 8, 0, 0, TAU); c.fill(); c.beginPath(); c.ellipse(x + 7, y + 14, 6, 8, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.body; c.beginPath(); c.ellipse(x, y - 2, 12, 14, 0, 0, TAU); c.fill();
+  c.beginPath(); c.ellipse(x, y - 20, 10, 11, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.face;
+  c.beginPath(); c.moveTo(x - 5, y - 28); c.lineTo(x - 3, y - 37); c.lineTo(x - 1, y - 28); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(x + 1, y - 28); c.lineTo(x + 4, y - 40); c.lineTo(x + 6, y - 28); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.6)'; c.save(); c.translate(x - 3, y - 22); c.rotate(0.4); c.beginPath(); c.ellipse(0, 0, 2, 4, 0, 0, TAU); c.fill(); c.restore();
+  c.fillStyle = '#0a3a4a'; c.beginPath(); c.arc(x - 4, y - 20, 1.6, 0, TAU); c.fill(); c.beginPath(); c.arc(x + 4, y - 20, 1.6, 0, TAU); c.fill();
+}
+function drawCharacter(c, id, x, y, lUp, rUp) {
+  const sk = skinById(id);
+  if (id === 'robot') drawRobot(c, x, y, sk);
+  else if (id === 'dragon') drawDragon(c, x, y, sk);
+  else if (id === 'alien') drawAlien(c, x, y, sk);
+  else if (id === 'ice') drawIce(c, x, y, sk);
+  else if (id === 'panda') drawPanda(c, x, y, sk);
+  else if (id === 'gold') drawGoldGorilla(c, x, y, sk, lUp, rUp);
+  else drawGorillaBody(c, x, y, sk, lUp, rUp);
+}
+
 function drawGorilla(g, idx) {
   if (!g.alive) return;
   const isWinner = state.roundOver && g.alive;
   let yOff = 0, lUp = 0, rUp = 0;
   if (isWinner) { const t = state.overTimer * 0.25, ph = Math.sin(t); lUp = Math.max(0, ph); rUp = Math.max(0, -ph); yOff = -Math.abs(Math.sin(t)) * 12; }
   const x = g.x, y = g.y + yOff;
-  const sk = skinFor(idx);     // skin echipat pt gorila local controlată; default pt restul
-  ctx.fillStyle = sk.body;
-  ctx.beginPath(); ctx.ellipse(x, y - 2, 13, 14, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(x, y - 20, 11, 12, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = sk.limb;     // brațe/picioare
-  ctx.beginPath(); ctx.ellipse(x - 14, y - 1 - lUp * 28, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(x + 14, y - 1 - rUp * 28, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(x - 7, y + 14, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(x + 7, y + 14, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = sk.face;     // față/bot
-  ctx.beginPath(); ctx.ellipse(x, y - 17, 7, 8, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#fff'; ctx.fillRect(x - 4, y - 20, 2, 2); ctx.fillRect(x + 2, y - 20, 2, 2);
-  ctx.fillStyle = '#000'; ctx.fillRect(x - 3, y - 20, 1, 1); ctx.fillRect(x + 3, y - 20, 1, 1);
-  ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - 3, y - 14); ctx.lineTo(x + 3, y - 14); ctx.stroke();
-  ctx.fillStyle = 'rgba(180,140,100,0.25)'; ctx.fillRect(x - 6, y - 6, 12, 6);
+  drawCharacter(ctx, idx === mySkinIdx() ? profile.skin : 'default', x, y, lUp, rUp);
   if (idx === state.turn && !state.volleyActive && !state.roundOver) {
     ctx.strokeStyle = '#ffd700'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5;
     ctx.strokeRect(x - 20, y - 30, 40, 56); ctx.setLineDash([]);
@@ -2199,7 +2284,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v21';
+const APP_VERSION = 'v22';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

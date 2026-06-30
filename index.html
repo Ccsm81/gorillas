@@ -260,6 +260,34 @@
   body.touch .mchip { padding: 2px 6px; background: rgba(20,8,40,0.55); }
   body.touch .mchip .mtxt { font-size: 10px; } body.touch .mchip .mprog { font-size: 9px; }
 
+  /* ── overlays (shop / settings) ── */
+  .ovl { display: none; position: fixed; inset: 0; z-index: 60; background: rgba(5,2,12,0.82); align-items: center; justify-content: center; padding: 14px; }
+  .ovl:not(.hidden) { display: flex; }
+  .osheet { background: #1a0d2e; border: 1px solid #5a3e6e; border-radius: 14px; padding: 16px; max-width: 460px; width: 100%; max-height: 92vh; max-height: 92dvh; overflow-y: auto; color: #eee; }
+  .otitle { color: #ffd700; font-size: 18px; text-align: center; margin-bottom: 12px; }
+  .ocoins { color: #ffd24a; font-size: 14px; margin-left: 8px; }
+  .oclose { display: block; width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; }
+  .orow { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 14px; }
+  .orow input[type=range] { flex: 1; accent-color: #ffd700; }
+  .orow2 { font-size: 12px; color: #cbb8e0; margin-top: 10px; }
+  #setCode { width: 100%; background: #0e0720; color: #ffd700; border: 1px solid #5a3e6e; border-radius: 6px; padding: 8px; font-size: 12px; resize: vertical; font-family: monospace; }
+  #shopGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; background: #251640; border: 2px solid #4a3060; border-radius: 10px; cursor: pointer; user-select: none; }
+  .stile.sel { border-color: #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.4); }
+  .sgor { position: relative; width: 34px; height: 40px; }
+  .sgor .sg-b { position: absolute; left: 7px; top: 9px; width: 20px; height: 26px; border-radius: 50%; }
+  .sgor .sg-f { position: absolute; left: 12px; top: 4px; width: 10px; height: 12px; border-radius: 50%; }
+  .snm { font-size: 11px; color: #ddd; }
+  .sbtn { font-size: 11px; color: #ffd24a; }
+  .stile.sel .sbtn { color: #7affb0; }
+  /* tutorial */
+  #tut { display: none; }
+  #tut.show { display: flex; position: fixed; inset: 0; z-index: 100; background: rgba(5,2,12,0.88); align-items: center; justify-content: center; padding: 20px; }
+  .tutbox { background: #1a0d2e; border: 2px solid #ffd700; border-radius: 14px; padding: 18px 20px; max-width: 420px; text-align: center; color: #eee; font-size: 15px; line-height: 1.5; }
+  .tutbig { font-size: 40px; margin-bottom: 6px; }
+  .tutsub { font-size: 12px; color: #cbb8e0; }
+  #tutClose { margin-top: 14px; padding: 10px 18px; font-size: 15px; }
+
   /* ── iOS install hint (Add to Home Screen) ── */
   #iosInstall { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 72;
     display: none; align-items: center; gap: 10px; max-width: 94vw;
@@ -283,6 +311,33 @@
 <button id="shareFab" class="fab small">📸</button>
 <button id="fsbtn" class="fab small">⛶</button>
 <div id="woverlay" class="hidden"><div id="wsheet"><div id="wgridTitle">Choose weapon</div><div id="wgrid"></div><button id="wclose">Close</button></div></div>
+
+<!-- Skin shop -->
+<div id="shopOverlay" class="hidden ovl"><div class="osheet">
+  <div class="otitle">🛍️ Skin Shop <span id="shopCoins" class="ocoins">🪙 0</span></div>
+  <div id="shopGrid"></div>
+  <button id="shopClose" class="oclose">Close</button>
+</div></div>
+
+<!-- Settings + backup -->
+<div id="setOverlay" class="hidden ovl"><div class="osheet">
+  <div class="otitle">⚙️ Settings</div>
+  <label class="orow">Volume <input id="setVol" type="range" min="0" max="100" value="80"></label>
+  <label class="orow"><input id="setMusic" type="checkbox"> Background music</label>
+  <div class="orow2">Backup / restore progress (paste a code to restore):</div>
+  <textarea id="setCode" placeholder="backup code…" rows="2"></textarea>
+  <div class="orow"><button id="setExport" class="sec">📤 Export</button> <button id="setImport" class="sec">📥 Import</button></div>
+  <button id="setClose" class="oclose">Close</button>
+</div></div>
+
+<!-- First-run tutorial -->
+<div id="tut"><div class="tutbox">
+  <div class="tutbig">👆🎯</div>
+  <b>How to play</b><br>
+  Drag from your gorilla toward the throw direction — <b>longer drag = more power</b>. Release to throw!<br>
+  <span class="tutsub">Win rounds to grow your aim line · earn XP to unlock weapons · collect 🪙 for skins.</span><br>
+  <button id="tutClose">Got it!</button>
+</div></div>
 
 <!-- ── Lobby online (2 telefoane) ── -->
 <div id="lobby" class="hidden"><div id="lsheet">
@@ -314,12 +369,16 @@
   <button id="daily" class="sec">📅 Daily Challenge</button>
   <button id="share" class="sec">📸 Share</button>
   <button id="sound" class="sec">🔊 Sound</button>
+  <button id="music" class="sec">🎵 Music: off</button>
   <button id="preview" class="sec">🎯 Aim: ON</button>
+  <button id="shop" class="sec">🛍️ Shop</button>
+  <button id="settings" class="sec">⚙️</button>
   <button id="reset" class="sec">Restart match</button>
 </div>
 <div id="rankbar">
   <span class="rk" id="rkLabel">Rank 0</span>
   <span id="streak" title="Zile consecutive jucate">🔥 0</span>
+  <span id="coins" title="Coins">🪙 0</span>
   <div id="xpwrap"><div id="xpfill"></div></div>
   <span id="xptext"></span>
   <span id="nextunlock"></span>
@@ -352,6 +411,7 @@ let AC = null;
 let soundOn = true;
 function audioOn() { // trebuie apelat la primul gest (iOS/Chrome blochează altfel)
   try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) {}
+  if (profile && profile.settings && profile.settings.music && !musicOn) musicStart();   // pornește muzica la primul gest
 }
 function tone({ freq = 200, type = 'sine', dur = 0.15, vol = 0.3, slideTo = null, delay = 0 }) {
   if (!AC || !soundOn) return;
@@ -359,16 +419,17 @@ function tone({ freq = 200, type = 'sine', dur = 0.15, vol = 0.3, slideTo = null
   const o = AC.createOscillator(), g = AC.createGain();
   o.type = type; o.frequency.setValueAtTime(freq * rand(0.94, 1.06), t0);
   if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t0 + dur);
-  g.gain.setValueAtTime(vol, t0);
+  g.gain.setValueAtTime(vol * masterVol(), t0);
   g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
   o.connect(g).connect(AC.destination); o.start(t0); o.stop(t0 + dur + 0.02);
 }
+function masterVol() { return (profile && profile.settings && Number.isFinite(profile.settings.vol)) ? profile.settings.vol : 0.8; }
 function noiseBurst({ dur = 0.4, vol = 0.5, cutoff = 900 }) {
   if (!AC || !soundOn) return;
   const n = Math.floor(AC.sampleRate * dur), buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
   for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2); // decay = boom
   const s = AC.createBufferSource(); s.buffer = buf;
-  const g = AC.createGain(); g.gain.value = vol;
+  const g = AC.createGain(); g.gain.value = vol * masterVol();
   const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = cutoff * rand(0.85, 1.15);
   s.connect(lp).connect(g).connect(AC.destination); s.start();
 }
@@ -479,9 +540,18 @@ function loadProfile() {
       p.xp = Math.min(p.xp, 1e12);
       if (!Number.isFinite(p.aim) || p.aim < 0) p.aim = 0; else p.aim = Math.min(p.aim, 1e6);  // R1: puncte de traiectorie (cu plafon)
       if (!Array.isArray(p.missions)) p.missions = [];          // misiuni active (R4)
+      if (!Number.isFinite(p.coins) || p.coins < 0) p.coins = 0; else p.coins = Math.min(p.coins, 1e9);  // monedă (shop)
+      if (typeof p.skin !== 'string') p.skin = 'default';        // skin echipat
+      if (!Array.isArray(p.owned)) p.owned = ['default'];        // skin-uri deținute
+      if (p.owned.indexOf('default') < 0) p.owned.push('default');
+      if (!Array.isArray(p.ach)) p.ach = [];                     // achievements deblocate (id-uri)
+      if (typeof p.stats !== 'object' || !p.stats) p.stats = {};  // recorduri: wins, bestStreak, balloons...
+      if (typeof p.settings !== 'object' || !p.settings) p.settings = {};
+      if (!Number.isFinite(p.settings.vol)) p.settings.vol = 0.8; // volum 0..1
+      if (typeof p.settings.music !== 'boolean') p.settings.music = false;
       return p;
     } } catch (e) {}  // L5: respinge XP corupt/Infinity
-  return { xp: 0, streak: 0, lastPlayed: '', aim: 0, missions: [] };
+  return { xp: 0, streak: 0, lastPlayed: '', aim: 0, missions: [], coins: 0, skin: 'default', owned: ['default'], ach: [], stats: {}, settings: { vol: 0.8, music: false } };
 }
 function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {} }
 // STREAK: zile consecutive cu cel puțin un meci jucat (mecanica #1 de retenție D1→D7)
@@ -569,7 +639,7 @@ function missionEvent(ev, n) {
       showToast('✅ Mission: ' + m.text + '  +' + m.reward + ' XP', 220);
       const rew = m.reward;
       profile.missions[i] = newMission(profile.missions);
-      awardXp(rew);   // awardXp salvează + reîmprospătează UI + verifică deblocări
+      awardXp(rew); awardCoins(Math.ceil(rew / 3));   // XP + monedă la misiune completă
     }
   }
   if (changed) { saveProfile(); renderMissions(); }
@@ -584,6 +654,141 @@ function renderMissions() {
       '<span class="mprog">' + Math.min(m.prog, m.goal) + '/' + m.goal + ' · +' + m.reward + ' XP</span>';
     box.appendChild(chip);
   }
+}
+
+// ════════════════════════ MUSIC (procedural, zero assets) ════════════════════════
+let musicOn = false, musicTimer = null, musicStep = 0;
+const MUSIC_MEL = [330, 392, 440, 392, 330, 440, 494, 440, 330, 392, 494, 587, 494, 440, 392, 294];
+function musicTick() {
+  if (!musicOn) return;
+  if (AC && soundOn) {
+    const f = MUSIC_MEL[musicStep % MUSIC_MEL.length];
+    tone({ freq: f, type: 'triangle', dur: 0.22, vol: 0.06 });
+    if (musicStep % 4 === 0) tone({ freq: f / 2, type: 'sine', dur: 0.45, vol: 0.06 });
+    musicStep++;
+  }
+  musicTimer = setTimeout(musicTick, 250);
+}
+function musicStart() { if (musicOn) return; musicOn = true; musicStep = 0; musicTick(); }
+function musicStop() { musicOn = false; if (musicTimer) { clearTimeout(musicTimer); musicTimer = null; } }
+function musicSync() { if (profile.settings.music) musicStart(); else musicStop(); updateMusicBtn(); }
+function updateMusicBtn() { const b = document.getElementById('music'); if (b) b.textContent = profile.settings.music ? '🎵 Music' : '🎵 Music: off'; }
+
+// ════════════════════════ COINS ════════════════════════
+function awardCoins(n) { profile.coins = Math.min(1e9, (profile.coins || 0) + n); saveProfile(); updateCoinUI(); }
+function updateCoinUI() { const e = document.getElementById('coins'); if (e) e.textContent = '🪙 ' + (profile.coins | 0); }
+
+// ════════════════════════ SKINS (cosmetic LOCAL — nu se sincronizează în MP) ════════════════════════
+const SKINS = [
+  { id:'default', name:'Classic', cost:0,   body:'#9a6a44', limb:'#6e4a2e', face:'#c2926a' },
+  { id:'robot',   name:'Robot',   cost:25,  body:'#8a93a0', limb:'#5a6470', face:'#c0ccd8' },
+  { id:'dragon',  name:'Dragon',  cost:40,  body:'#3aa05a', limb:'#247040', face:'#7ad08a' },
+  { id:'alien',   name:'Alien',   cost:55,  body:'#9a5fd0', limb:'#6a3fa0', face:'#c89aff' },
+  { id:'ice',     name:'Ice',     cost:70,  body:'#6ab0d0', limb:'#3a80a0', face:'#bfe8f5' },
+  { id:'panda',   name:'Panda',   cost:90,  body:'#eef0f2', limb:'#2a2a2e', face:'#ffffff' },
+  { id:'gold',    name:'Golden',  cost:150, body:'#d4af37', limb:'#9c7a17', face:'#ffe680' },
+];
+function skinById(id) { return SKINS.find(s => s.id === id) || SKINS[0]; }
+function mySkinIdx() { return mpActive ? localPlayer : 0; }  // gorila controlată local (om = Jucător 1)
+function skinFor(idx) { return idx === mySkinIdx() ? skinById(profile.skin) : SKINS[0]; }
+function buildShop() {
+  const grid = document.getElementById('shopGrid'); if (!grid) return; grid.innerHTML = '';
+  const cc = document.getElementById('shopCoins'); if (cc) cc.textContent = '🪙 ' + (profile.coins | 0);
+  for (const s of SKINS) {
+    const owned = profile.owned.indexOf(s.id) >= 0, equipped = profile.skin === s.id;
+    const tile = document.createElement('div'); tile.className = 'stile' + (equipped ? ' sel' : '');
+    tile.innerHTML = '<div class="sgor"><span class="sg-b" style="background:' + s.body + '"></span><span class="sg-f" style="background:' + s.face + '"></span></div>' +
+      '<div class="snm">' + s.name + '</div>' +
+      '<div class="sbtn">' + (equipped ? '✓ Equipped' : owned ? 'Equip' : '🪙 ' + s.cost) + '</div>';
+    tile.addEventListener('click', () => {
+      sfxClick();
+      if (equipped) return;
+      if (owned) { profile.skin = s.id; saveProfile(); buildShop(); }
+      else if ((profile.coins | 0) >= s.cost) { profile.coins -= s.cost; profile.owned.push(s.id); profile.skin = s.id; saveProfile(); updateCoinUI(); buildShop(); showToast('✅ ' + s.name + ' unlocked!', 160); checkAch(); }
+      else showToast('Not enough coins (need ' + s.cost + ')', 150);
+    });
+    grid.appendChild(tile);
+  }
+}
+function openShop() { audioOn(); buildShop(); const o = document.getElementById('shopOverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
+function closeShop() { const o = document.getElementById('shopOverlay'); o.classList.add('hidden'); o.style.display = 'none'; }
+
+// ════════════════════════ STATS + ACHIEVEMENTS ════════════════════════
+function bumpStat(k, v) { profile.stats = profile.stats || {}; profile.stats[k] = (profile.stats[k] || 0) + (v == null ? 1 : v); }
+function setStatMax(k, v) { profile.stats = profile.stats || {}; profile.stats[k] = Math.max(profile.stats[k] || 0, v); }
+const ACHS = [
+  { id:'first_win',  name:'First Blood',    test:() => (profile.stats.wins||0) >= 1 },
+  { id:'win10',      name:'10 Wins',        test:() => (profile.stats.wins||0) >= 10 },
+  { id:'win50',      name:'50 Wins',        test:() => (profile.stats.wins||0) >= 50 },
+  { id:'streak5',    name:'5 in a Row',     test:() => (profile.stats.bestStreak||0) >= 5 },
+  { id:'balloons25', name:'Balloon Hunter', test:() => (profile.stats.balloons||0) >= 25 },
+  { id:'allweap',    name:'Arsenal Master', test:() => currentRank() >= 12 },
+  { id:'allskins',   name:'Fashionista',    test:() => profile.owned.length >= SKINS.length },
+];
+function checkAch() {
+  for (const a of ACHS) if (profile.ach.indexOf(a.id) < 0 && a.test()) {
+    profile.ach.push(a.id); saveProfile(); awardCoins(10);
+    showToast('🏆 ' + a.name + ' (+10 🪙)', 220);
+  }
+}
+
+// ════════════════════════ POWER-UP CRATE (DOAR single-player — nu atinge sim-ul MP determinist) ════════════════════════
+const POWERUPS = [ { id:'big', name:'Big Shot', icon:'💥' }, { id:'aim', name:'Bullseye', icon:'🎯' } ];
+function stepCrate() {
+  if (mpActive || state.roundOver) { state.crate = null; return; }
+  if (state.crate) { const c = state.crate; c.x += c.vx; c.y += Math.sin(state.frame * 0.05 + c.ph) * 0.35; if (c.x < -40 || c.x > W + 40) state.crate = null; return; }
+  if (state.crateCool > 0) { state.crateCool--; return; }
+  if (Math.random() < 0.009) {
+    const fromLeft = Math.random() < 0.5;
+    state.crate = { x: fromLeft ? -28 : W + 28, y: rand(55, 175), vx: (fromLeft ? 1 : -1) * rand(1.0, 1.7), ph: rand(0, 6.28), pu: POWERUPS[randInt(0, POWERUPS.length - 1)] };
+    state.crateCool = 420;
+  }
+}
+function popCrate() {
+  const c = state.crate; if (!c) return;
+  for (let i = 0; i < 18; i++) { const a = Math.random() * 6.28, s = rand(1, 3.5); state.particles.push({ x: c.x, y: c.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: 1, color: ['#ffd700','#7fd0ff','#7affb0'][randInt(0, 2)] }); }
+  state.buff = { player: state.turn, id: c.pu.id };   // buff pt următoarea lovitură a aceluiași jucător
+  state.crate = null; state.crateCool = 360; sfxBounce();
+  showToast(c.pu.icon + ' ' + c.pu.name + ' — your next shot!', 160);
+}
+function drawCrate() {
+  const c = state.crate; if (!c) return;
+  ctx.save();
+  ctx.fillStyle = '#b07a3a'; ctx.fillRect(c.x - 13, c.y - 13, 26, 26);
+  ctx.strokeStyle = '#6e4a1e'; ctx.lineWidth = 2; ctx.strokeRect(c.x - 13, c.y - 13, 26, 26);
+  ctx.beginPath(); ctx.moveTo(c.x - 13, c.y - 13); ctx.lineTo(c.x + 13, c.y + 13); ctx.moveTo(c.x + 13, c.y - 13); ctx.lineTo(c.x - 13, c.y + 13); ctx.stroke();
+  ctx.font = '14px Georgia'; ctx.textAlign = 'center'; ctx.fillText(c.pu.icon, c.x, c.y + 5); ctx.textAlign = 'start';
+  ctx.restore();
+}
+
+// ════════════════════════ SETTINGS + EXPORT/IMPORT PROFIL ════════════════════════
+function openSettings() { audioOn(); const v = document.getElementById('setVol'); if (v) v.value = Math.round(masterVol() * 100); const m = document.getElementById('setMusic'); if (m) m.checked = !!profile.settings.music; const o = document.getElementById('setOverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
+function closeSettings() { const o = document.getElementById('setOverlay'); o.classList.add('hidden'); o.style.display = 'none'; }
+function exportProfile() {
+  try {
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(profile))));
+    const ta = document.getElementById('setCode'); if (ta) { ta.value = code; ta.select(); }
+    if (navigator.clipboard) navigator.clipboard.writeText(code).catch(() => {});
+    showToast('📋 Backup code ready (copied)', 170);
+  } catch (e) {}
+}
+function importProfile() {
+  const ta = document.getElementById('setCode'); const code = (ta && ta.value || '').trim(); if (!code) return;
+  try {
+    const p = JSON.parse(decodeURIComponent(escape(atob(code))));
+    if (p && Number.isFinite(p.xp)) { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); showToast('✅ Imported — reloading…', 200); setTimeout(() => location.reload(), 700); }
+    else showToast('❌ Invalid code', 150);
+  } catch (e) { showToast('❌ Invalid code', 150); }
+}
+
+// ════════════════════════ TUTORIAL (prima rulare) ════════════════════════
+function maybeTutorial() {
+  let seen = false; try { seen = localStorage.getItem('gorillas_tut_v1') === '1'; } catch (e) {}
+  if (seen) return;
+  const el = document.getElementById('tut'); if (!el) return;
+  el.classList.add('show');
+  const close = () => { el.classList.remove('show'); try { localStorage.setItem('gorillas_tut_v1', '1'); } catch (e) {} };
+  const btn = document.getElementById('tutClose'); if (btn) btn.addEventListener('click', close);
 }
 
 let selectedWeaponId = 0;
@@ -760,7 +965,7 @@ function popBalloon() {
   for (let i = 0; i < 22; i++) { const a = Math.random() * 6.28, s = rand(1, 4); state.particles.push({ x: b.x, y: b.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: 1, color: ['#ffd700','#ff5fa2','#5fc8ff','#7affb0'][randInt(0, 3)] }); }
   state.balloon = null; state.balloonCool = 300; sfxBounce();
   const localTurn = (botPlayer < 0 || state.turn !== botPlayer) && (!mpActive || state.turn === localPlayer);
-  if (localTurn) { awardXp(15); showToast('🎈 +15 XP — balloon popped!', 120); missionEvent('balloon'); }
+  if (localTurn) { awardXp(15); awardCoins(2); bumpStat('balloons'); showToast('🎈 +15 XP · +2 🪙', 120); missionEvent('balloon'); checkAch(); }
 }
 function drawBalloon() {
   const b = state.balloon; if (!b) return;
@@ -840,6 +1045,7 @@ function init(keepScores) {
     hail: [],
     ambient: [], ambientType: biome.ambient, terrain: biome.terrain, biomeName: biome.name,
     bolts: [], vortex: null, balloon: null, balloonCool: 240,
+    crate: null, crateCool: 300, buff: null, bigText: null,
     roundOver: false,
     overTimer: 0,
     overMsg: '',
@@ -893,7 +1099,10 @@ function fire() {
   if (!g.alive) return;
   // R-audit L4: lovitura LOCALĂ a omului nu poate folosi o armă nedeblocată (loviturile remote/bot rămân ce-au ales ei)
   if (!botFiring && !remoteFiring && !isUnlocked(WEAPONS[selectedWeaponId])) selectedWeaponId = isUnlocked(WEAPONS[humanWeaponId]) ? humanWeaponId : 0;
-  const wpn = WEAPONS[selectedWeaponId];
+  let wpn = WEAPONS[selectedWeaponId];
+  // power-up "Big Shot" (doar single-player): lovitura curentă a jucătorului are crater/kill mai mare
+  if (state.buff && state.buff.player === state.turn && state.buff.id === 'big')
+    wpn = Object.assign({}, wpn, { crater: Math.round(wpn.crater * 1.6), kill: Math.round(wpn.kill * 1.5) });
   const dir = state.turn === 0 ? 1 : -1;
   const rad = angle * Math.PI / 180;
   const speed = clamp(velocity, 8, 200) * 0.42 * wpn.spd;
@@ -907,6 +1116,7 @@ function fire() {
   state.volleyResolved = false;
   sfxThrow();
   if (!botFiring && !remoteFiring) { bumpStreak(); missionEvent('shot'); } // M4: doar omul local; XP-ul vine din victorii+misiuni, nu din tras (anti-farm)
+  if (state.buff && state.buff.player === state.turn) state.buff = null;   // consumă power-up-ul
   if (mpActive) mpSeq++; // H2: index de tură monoton, identic pe ambele telefoane
 }
 
@@ -1086,6 +1296,7 @@ function endRound() {
       winRun++;
       const COMBO = { 2: 'DOUBLE!', 3: 'TRIPLE!', 4: 'RAMPAGE!', 5: 'UNSTOPPABLE!', 7: 'GODLIKE!', 10: 'LEGENDARY!' };
       if (COMBO[winRun]) { const bonus = winRun * 5; awardXp(bonus); state.bigText = { msg: '🔥 ' + COMBO[winRun] + '  +' + bonus + ' XP', t: 110 }; state.flash = Math.max(state.flash, 0.5); }
+      awardCoins(3); bumpStat('wins'); setStatMax('bestStreak', winRun); checkAch();   // monedă + recorduri + achievements
     } else { winRun = 0; }
     awardXp(localWon ? 75 : 10); // R-audit L1: XP plin doar la victorie locală; înfrângere = consolare mică
     sfxWin();
@@ -1175,6 +1386,7 @@ function stepShot(shot) {
 
   // balon bonus: dacă proiectilul îl atinge → pop (proiectilul își continuă drumul)
   if (state.balloon) { const bb = state.balloon, bdx = shot.x - bb.x, bdy = shot.y - bb.y; if (bdx * bdx + bdy * bdy <= (bb.r + 6) * (bb.r + 6)) popBalloon(); }
+  if (state.crate) { const cc = state.crate, cdx = shot.x - cc.x, cdy = shot.y - cc.y; if (cdx * cdx + cdy * cdy <= 22 * 22) popCrate(); }   // power-up (single-player)
 
   // gorilla direct hit
   if (inFrameX && shot.age > 5) {
@@ -1235,6 +1447,7 @@ function step() {
   if (state.bolts && state.bolts.length) { for (const b of state.bolts) b.t--; state.bolts = state.bolts.filter(b => b.t > 0); }
   if (state.vortex) { if (--state.vortex.t <= 0) state.vortex = null; }
   stepBalloon();
+  stepCrate();   // ladă power-up (doar single-player)
   // trail aging
   for (const t of state.trail) t.age++;
   state.trail = state.trail.filter(t => t.age < 120);
@@ -1402,15 +1615,16 @@ function drawGorilla(g, idx) {
   let yOff = 0, lUp = 0, rUp = 0;
   if (isWinner) { const t = state.overTimer * 0.25, ph = Math.sin(t); lUp = Math.max(0, ph); rUp = Math.max(0, -ph); yOff = -Math.abs(Math.sin(t)) * 12; }
   const x = g.x, y = g.y + yOff;
-  ctx.fillStyle = '#9a6a44';   // corp: maro mai deschis (vizibil pe cer de noapte)
+  const sk = skinFor(idx);     // skin echipat pt gorila local controlată; default pt restul
+  ctx.fillStyle = sk.body;
   ctx.beginPath(); ctx.ellipse(x, y - 2, 13, 14, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(x, y - 20, 11, 12, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#6e4a2e';   // brațe/picioare: mai închis decât corpul (separare), dar tot vizibil
+  ctx.fillStyle = sk.limb;     // brațe/picioare
   ctx.beginPath(); ctx.ellipse(x - 14, y - 1 - lUp * 28, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(x + 14, y - 1 - rUp * 28, 5, 9, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(x - 7, y + 14, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(x + 7, y + 14, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#c2926a';   // față/bot: ton deschis ca să iasă în evidență
+  ctx.fillStyle = sk.face;     // față/bot
   ctx.beginPath(); ctx.ellipse(x, y - 17, 7, 8, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.fillRect(x - 4, y - 20, 2, 2); ctx.fillRect(x + 2, y - 20, 2, 2);
   ctx.fillStyle = '#000'; ctx.fillRect(x - 3, y - 20, 1, 1); ctx.fillRect(x + 3, y - 20, 1, 1);
@@ -1429,7 +1643,9 @@ const PREVIEW_SPACING = 8;      // un punct de aim la fiecare 8 pași de traiect
 function drawTrajectoryPreview() {
   if (state.volleyActive || state.roundOver) return;
   if (previewMode === 0) return;                 // OFF
-  const aimDots = profile.aim | 0;
+  // power-up "Bullseye": preview COMPLET o tură pt jucătorul care l-a luat (doar single-player)
+  const bullseye = state.buff && state.buff.player === state.turn && state.buff.id === 'aim';
+  const aimDots = bullseye ? 1e9 : (profile.aim | 0);
   if (aimDots <= 0) return;                       // încă n-a câștigat puncte de traseu → fără ajutor (skill pur)
   const traj = computeTrajectory();
   if (!traj) return;
@@ -1611,6 +1827,7 @@ function render() {
   ctx.drawImage(skylineOff, 0, 0);
   drawAmbient();   // zăpadă/scântei/bule/stele de biome
   drawBalloon();   // balon bonus pe cer
+  drawCrate();     // ladă power-up
   drawFires();
   for (let i = 0; i < state.gorillas.length; i++) drawGorilla(state.gorillas[i], i);
   drawTrajectoryPreview();
@@ -1793,6 +2010,26 @@ document.getElementById('sound').addEventListener('click', () => {
   document.getElementById('sound').textContent = soundOn ? '🔊 Sound' : '🔇 Muted';
 });
 
+// Music toggle
+document.getElementById('music').addEventListener('click', () => {
+  audioOn(); profile.settings.music = !profile.settings.music; saveProfile();
+  if (profile.settings.music) musicStart(); else musicStop();
+  updateMusicBtn();
+});
+// Shop
+document.getElementById('shop').addEventListener('click', openShop);
+document.getElementById('shopClose').addEventListener('click', closeShop);
+document.getElementById('shopOverlay').addEventListener('click', e => { if (e.target.id === 'shopOverlay') closeShop(); });
+// Settings + backup
+document.getElementById('settings').addEventListener('click', openSettings);
+document.getElementById('setClose').addEventListener('click', closeSettings);
+document.getElementById('setOverlay').addEventListener('click', e => { if (e.target.id === 'setOverlay') closeSettings(); });
+document.getElementById('setVol').addEventListener('input', e => { profile.settings.vol = clamp((+e.target.value || 0) / 100, 0, 1); saveProfile(); });
+document.getElementById('setVol').addEventListener('change', () => { audioOn(); sfxClick(); });
+document.getElementById('setMusic').addEventListener('change', e => { audioOn(); profile.settings.music = !!e.target.checked; saveProfile(); if (profile.settings.music) musicStart(); else musicStop(); updateMusicBtn(); });
+document.getElementById('setExport').addEventListener('click', exportProfile);
+document.getElementById('setImport').addEventListener('click', importProfile);
+
 document.addEventListener('keydown', (e) => {
   const tag = (e.target.tagName || '').toLowerCase();
   const inField = tag === 'input';
@@ -1962,7 +2199,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v20';
+const APP_VERSION = 'v21';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)
@@ -1980,6 +2217,9 @@ refreshProgressUI();
 renderWeaponBar();
 updateHint();
 initMissions();
+updateCoinUI();
+updateMusicBtn();
+maybeTutorial();
 init(false);
 loop();
 

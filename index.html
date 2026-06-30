@@ -214,13 +214,14 @@
       text-align: center; font-size: 22px; line-height: 1.6; padding: 24px; }
   }
 
+  .hidden { display: none !important; }   /* clasă generică de ascundere (lipsea — #lshare apărea mereu) */
   /* overlay alegere armă (tile-uri mari) */
   #woverlay { position: fixed; inset: 0; z-index: 50; background: rgba(5,2,12,0.82);
     align-items: center; justify-content: center; padding: 14px; }
   #woverlay:not(.hidden) { display: flex; }
   #wsheet { background: #1a0d2e; border: 1px solid #5a3e6e; border-radius: 14px; padding: 14px;
-    max-width: 560px; width: 100%; max-height: 92dvh; overflow-y: auto; }
-  #wgridTitle { color: #ffd700; font-size: 18px; text-align: center; margin-bottom: 10px; }
+    max-width: 560px; width: 100%; max-height: 92dvh; max-height: 92svh; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; }
+  #wgridTitle { color: #ffd700; font-size: 18px; text-align: center; margin-bottom: 10px; flex: 0 0 auto; position: sticky; top: -14px; background: #1a0d2e; padding: 4px 0; z-index: 3; }
   #wgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .wtile { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 4px;
     background: #251640; border: 2px solid #4a3060; border-radius: 10px; cursor: pointer; user-select: none; }
@@ -230,13 +231,13 @@
   .wtile.locked { opacity: 0.42; filter: grayscale(0.7); cursor: not-allowed; }
   .wtile.locked .nm { color: #f88; }
   .wtile.weak .nm::after { content: ' ⚠'; }
-  #wclose { display: block; width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; }
+  #wclose { display: block; width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; flex: 0 0 auto; position: sticky; bottom: -14px; background: #2a1840; z-index: 3; }
 
   /* ── lobby online ── */
   #ver { position: fixed; bottom: 2px; left: 5px; font-size: 10px; color: rgba(255,255,255,0.45); z-index: 70; cursor: pointer; padding: 4px 6px; -webkit-tap-highlight-color: transparent; }
   #lobby { display: none; position: fixed; inset: 0; z-index: 60; background: rgba(5,2,12,0.85); align-items: center; justify-content: center; padding: 16px; }
   #lobby:not(.hidden) { display: flex; }
-  #lsheet { background: #1a0d2e; border: 1px solid #5a3e6e; border-radius: 14px; padding: 18px; max-width: 380px; width: 100%; text-align: center; }
+  #lsheet { background: #1a0d2e; border: 1px solid #5a3e6e; border-radius: 14px; padding: 18px; max-width: 380px; width: 100%; max-height: 92dvh; max-height: 92svh; overflow-y: auto; -webkit-overflow-scrolling: touch; text-align: center; }
   #ltitle { color: #ffd700; font-size: 19px; margin-bottom: 16px; }
   #lsheet button { width: 100%; padding: 13px; font-size: 15px; margin: 6px 0; }
   #ldiv { color: #888; font-size: 13px; margin: 10px 0; }
@@ -296,6 +297,15 @@
   body.compact-ui #tut.show { padding: 6px; align-items: flex-start; }
   body.compact-ui .tutbox { padding: 12px 16px; font-size: 13px; line-height: 1.4; }
   body.compact-ui .tutbig { font-size: 26px; margin-bottom: 2px; }
+  /* weapon picker compact pe telefoane în landscape */
+  body.compact-ui #woverlay { padding: 6px; align-items: flex-start; }
+  body.compact-ui #wsheet { padding: 10px 12px; max-width: 96vw; }
+  body.compact-ui #wgridTitle { font-size: 15px; margin-bottom: 4px; padding: 4px 0; }
+  body.compact-ui #wgrid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  body.compact-ui .wtile { padding: 5px 2px; gap: 2px; }
+  body.compact-ui .wtile .ic { font-size: 22px; }
+  body.compact-ui .wtile .nm { font-size: 9px; }
+  body.compact-ui #wclose { padding: 9px; margin-top: 8px; }
   /* How to Play guide */
   .hbody { text-align: left; font-size: 13.5px; line-height: 1.5; color: #e8def5; }
   .hh { color: #ffd700; font-weight: 700; font-size: 14.5px; margin: 14px 0 5px; }
@@ -646,7 +656,10 @@ function loadProfile() {
   try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY));
     if (p && Number.isFinite(p.xp) && p.xp >= 0) {
       p.xp = Math.min(p.xp, 1e12);
-      if (!Number.isFinite(p.aim) || p.aim < 0) p.aim = 0; else p.aim = Math.min(p.aim, AIM_FULL);  // R1: puncte traseu, plafonat la COMPLET
+      if (!Number.isFinite(p.aim) || p.aim < 0) p.aim = 0; else p.aim = Math.min(p.aim, AIM_FULL);  // R1: aim local (mirror), plafonat
+      // aim PER LOC persistat [seat0, seat1] — în 2-player fiecare copil își acumulează propriul traseu. Migrăm din vechiul scalar.
+      if (!Array.isArray(p.aimP) || p.aimP.length !== 2) p.aimP = [p.aim | 0, 0];
+      p.aimP = p.aimP.map(v => Math.max(0, Math.min(AIM_FULL, Number.isFinite(v) ? (v | 0) : 0)));
       if (!Array.isArray(p.missions)) p.missions = [];          // misiuni active (R4)
       if (!Number.isFinite(p.coins) || p.coins < 0) p.coins = 0; else p.coins = Math.min(p.coins, 1e9);  // monedă (shop)
       if (typeof p.skin !== 'string') p.skin = 'default';        // skin echipat
@@ -659,7 +672,7 @@ function loadProfile() {
       if (typeof p.settings.music !== 'boolean') p.settings.music = false;
       return p;
     } } catch (e) {}  // L5: respinge XP corupt/Infinity
-  return { xp: 0, streak: 0, lastPlayed: '', aim: 0, missions: [], coins: 0, skin: 'default', owned: ['default'], ach: [], stats: {}, settings: { vol: 0.8, music: false } };
+  return { xp: 0, streak: 0, lastPlayed: '', aim: 0, aimP: [0, 0], missions: [], coins: 0, skin: 'default', owned: ['default'], ach: [], stats: {}, settings: { vol: 0.8, music: false } };
 }
 function saveProfile() { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {} }
 // STREAK: zile consecutive cu cel puțin un meci jucat (mecanica #1 de retenție D1→D7)
@@ -729,11 +742,14 @@ function newMission(exclude) {
   return { key: t.key, text: t.text, goal: t.goal, reward: t.reward, ev: t.ev, prog: 0 };
 }
 function initMissions() {
-  if (!Array.isArray(profile.missions) || profile.missions.length < 3) {
-    profile.missions = [];
-    while (profile.missions.length < 3) profile.missions.push(newMission(profile.missions));
-    saveProfile();
-  }
+  if (!Array.isArray(profile.missions)) profile.missions = [];
+  // repară misiuni corupte/vechi (ex. dintr-un import sau o versiune mai veche) → altfel afișau NaN și nu se completau
+  profile.missions = profile.missions.filter(m =>
+    m && typeof m.key === 'string' && typeof m.ev === 'string' && Number.isFinite(m.goal) && Number.isFinite(m.reward));
+  profile.missions.forEach(m => { if (!Number.isFinite(m.prog) || m.prog < 0) m.prog = 0; });
+  if (profile.missions.length > 3) profile.missions.length = 3;
+  while (profile.missions.length < 3) profile.missions.push(newMission(profile.missions));
+  saveProfile();
   renderMissions();
 }
 function missionEvent(ev, n) {
@@ -988,6 +1004,7 @@ function mpApplyShot(a, v, w, seq, cs) {
   if (typeof cs === 'number' && cs !== mpChecksum()) {
     if (localPlayer === 0) { if (window.__mpSend) window.__mpSend(mpSnapshot()); }  // host = sursă de adevăr
     else if (window.__mpSend) window.__mpSend({ t: 'sync', req: true });            // guest cere snapshot
+    return;   // NU aplica o lovitură peste o stare divergentă — așteaptă snapshot-ul de resync (altfel adâncim desincronizarea)
   }
   document.getElementById('angle').value = clamp(a, 0, 90);
   document.getElementById('velocity').value = clamp(v, 8, 200);
@@ -1196,9 +1213,14 @@ function init(keepScores) {
     ambient: [], ambientType: biome.ambient, terrain: biome.terrain, biomeName: biome.name,
     bolts: [], vortex: null, balloon: null, balloonCool: 240,
     crate: null, crateCool: 300, buff: null, bigText: null,
-    // aim de traseu PER JUCĂTOR (ca să dispară ținta când PIERDE oricare jucător, inclusiv în 2-player).
-    // Local player poartă progresul salvat (profile.aim); în 2-player ambii copii pornesc de la aceeași valoare.
-    aimP: (() => { const me = mpActive ? localPlayer : 0, base = profile.aim | 0, a = [0, 0]; a[me] = base; if (!mpActive && botPlayer < 0) a[1 - me] = base; return a; })(),
+    // aim de traseu PER JUCĂTOR, persistat per loc (profile.aimP) → fiecare copil acumulează propriul traseu între runde.
+    aimP: (() => {
+      const c = v => Math.max(0, Math.min(AIM_FULL, v | 0));
+      const src = (Array.isArray(profile.aimP) && profile.aimP.length === 2) ? profile.aimP : [profile.aim | 0, 0];
+      if (mpActive) { const a = [0, 0]; a[localPlayer] = c(src[localPlayer]); return a; }   // online: doar locul meu; adversarul e local-only
+      if (botPlayer < 0) return [c(src[0]), c(src[1])];                                       // 2-player: ambele locuri persistă independent
+      return [c(src[0]), 0];                                                                   // vs bot: omul (loc 0) poartă aim-ul; botul 0
+    })(),
     roundOver: false,
     overTimer: 0,
     overMsg: '',
@@ -1223,7 +1245,7 @@ function updateUI() {
   const t = state.turn;
   const tl = document.getElementById('turnLabel');
   if (mpActive) tl.textContent = (t === localPlayer ? '➤ YOUR turn' : "Opponent's turn") + `  |  ${scores[0]} : ${scores[1]}`;
-  else tl.textContent = `Player ${t + 1}  |  ${scores[0]} : ${scores[1]}`;
+  else tl.textContent = ((botPlayer >= 0 && t === botPlayer) ? 'Bot' : `Player ${t + 1}`) + `  |  ${scores[0]} : ${scores[1]}`;
   tl.style.color = t === 0 ? '#6cf' : '#f96';
   const w = state.wind;
   const arrow = w > 0 ? '→' : '←';
@@ -1319,37 +1341,41 @@ function splashKill(x, y, KR) {
 function detonate(shot, x, y) {
   const w = shot.weapon;
   const nuke = w.size > 2;
+  // Armele cu split (air) n-au crater/kill de PĂRINTE — doar copiii. Dacă lovesc ceva înainte de apex
+  // (ex. Triple MIRV rank 0, lovitură razantă), foloseam undefined → nu omorau pe nimeni. Cădem pe valorile copilului.
+  const crater = Number.isFinite(w.crater) ? w.crater : (Number.isFinite(w.childCrater) ? w.childCrater : 16);
+  const kill   = Number.isFinite(w.kill)   ? w.kill   : (Number.isFinite(w.childKill)   ? w.childKill   : 22);
   let killed = [];
   if (w.effect === 'napalm') {
     const fireOn = !(state.weather && state.weather.id === 'hail');   // M3: grindina chiar stinge focul (nu doar warning UI)
     for (let o = -2; o <= 2; o++) {
       const fx = x + o * 20;
-      addCrater(fx, y, w.crater);
+      addCrater(fx, y, crater);
       explode(fx, y, 14, false);
       if (fireOn) for (let f = 0; f < 3; f++) addFire(fx + rand(-10, 10), y - rand(0, 8));
     }
-    killed = splashKill(x, y, fireOn ? w.kill : Math.round(w.kill * 0.55));   // rază de kill redusă în grindină
+    killed = splashKill(x, y, fireOn ? kill : Math.round(kill * 0.55));   // rază de kill redusă în grindină
     explode(x, y, 30, true);
   } else if (w.effect === 'lightning') {            // ⚡ trăsnet din cer
-    addCrater(x, y, w.crater);
+    addCrater(x, y, crater);
     explode(x, y, 64, true);
-    killed = splashKill(x, y, w.kill);
+    killed = splashKill(x, y, kill);
     (state.bolts = state.bolts || []).push({ x, y, t: 14 });
   } else if (w.effect === 'blackhole') {            // 🌀 implozie — particule înghițite spre centru
-    addCrater(x, y, w.crater);
+    addCrater(x, y, crater);
     explodeImplode(x, y, 64);
     explode(x, y, 40, true);
-    killed = splashKill(x, y, w.kill);
+    killed = splashKill(x, y, kill);
     state.vortex = { x, y, t: 28 };
   } else {
-    addCrater(x, y, w.crater);
+    addCrater(x, y, crater);
     explode(x, y, nuke ? 90 : 50, true);
-    killed = splashKill(x, y, w.kill);
+    killed = splashKill(x, y, kill);
     if (w.fire && !(state.weather && state.weather.id === 'hail')) addFire(x, y);   // meteoriți lasă foc (stins de grindină)
   }
   // ── JUICE: screen shake + flash (scalat cu raza craterului, cap 8px) ──
   const huge = nuke || w.effect === 'lightning' || w.effect === 'blackhole';
-  state.shake = Math.min(8, huge ? 8 : w.crater * 0.13);
+  state.shake = Math.min(8, huge ? 8 : crater * 0.13);
   state.flash = (nuke || w.effect === 'lightning') ? 1 : 0.5;
   sfxBoom(true, nuke);
   if (killed.length) {
@@ -1430,17 +1456,19 @@ function endRound() {
     const winner = alive[0];
     scores[winner]++;
     const who = (botPlayer === winner) ? 'Bot' : `Player ${winner + 1}`;
-    // a câștigat partea LOCALĂ (omul)? vs bot: oricine != bot; online: localPlayer; 2P local: oricine
-    const localWon = (botPlayer >= 0) ? (winner !== botPlayer) : (mpActive ? (winner === localPlayer) : true);
+    // A câștigat PROFILUL (proprietarul device-ului)? vs bot: tu (≠bot); online: localPlayer; 2P local: locul 0.
+    // În 2-player NU mai creditez orbește orice victorie — altfel P2 umfla XP/wins/streak-ul lui P1.
+    const personalWon = (botPlayer >= 0) ? (winner !== botPlayer) : (mpActive ? (winner === localPlayer) : (winner === 0));
     if (scores[winner] >= MATCH_TARGET) {        // best-of: meci câștigat
       state.matchOver = true;
       state.overMsg = `🏆 ${who} wins the MATCH ${scores[0]}–${scores[1]}!`;
-      if (localWon) missionEvent('matchWin');
+      if (personalWon) missionEvent('matchWin');
     } else {
       state.overMsg = `${who} wins the round  (${scores[0]}–${scores[1]})`;
     }
-    const meIdx = mySkinIdx(), aimBefore = Array.isArray(state.aimP) ? (state.aimP[meIdx] | 0) : (profile.aim | 0);
-    if (localWon) {
+    const meIdx = mpActive ? localPlayer : 0;
+    const aimBefore = Array.isArray(state.aimP) ? (state.aimP[meIdx] | 0) : (profile.aim | 0);
+    if (personalWon) {
       missionEvent('roundWin'); if (state.weather && state.weather.id === 'wind') missionEvent('windWin');
       // R3-idee: COMBO de victorii consecutive → anunț mare + bonus XP (mai mult haz, reward loop)
       winRun++;
@@ -1448,21 +1476,32 @@ function endRound() {
       if (COMBO[winRun]) { const bonus = winRun * 5; awardXp(bonus); state.bigText = { msg: '🔥 ' + COMBO[winRun] + '  +' + bonus + ' XP', t: 110 }; state.flash = Math.max(state.flash, 0.5); }
       awardCoins(3); bumpStat('wins'); setStatMax('bestStreak', winRun); checkAch();   // monedă + recorduri + achievements
     } else { winRun = 0; }
-    // R1: aim de traseu PER JUCĂTOR — câștigătorul +2 (plafon AIM_FULL), învinsul -2 (minim 0).
-    // Așa ținta DISPARE când pierde ORICARE jucător (inclusiv ambii copii în 2-player), nu doar omul local.
+    // R1: aim de traseu PER JUCĂTOR — câștigătorul +2 (plafon AIM_FULL), învinsul -2 (minim 0), PERSISTAT per loc.
+    // Așa ținta DISPARE când pierde ORICARE jucător și fiecare copil își acumulează propriul traseu între runde.
     if (Array.isArray(state.aimP)) {
       const loser = 1 - winner;
       state.aimP[winner] = Math.min(AIM_FULL, (state.aimP[winner] | 0) + 2);
       state.aimP[loser]  = Math.max(0, (state.aimP[loser] | 0) - 2);
-      profile.aim = state.aimP[meIdx] | 0; saveProfile();
+      if (!Array.isArray(profile.aimP) || profile.aimP.length !== 2) profile.aimP = [0, 0];
+      if (mpActive) profile.aimP[localPlayer] = state.aimP[localPlayer] | 0;
+      else if (botPlayer < 0) { profile.aimP[0] = state.aimP[0] | 0; profile.aimP[1] = state.aimP[1] | 0; }  // 2P: ambele locuri
+      else profile.aimP[0] = state.aimP[0] | 0;                                                              // vs bot: doar omul
+      profile.aim = profile.aimP[meIdx] | 0;   // mirror pt afișare/back-compat
+      saveProfile();
     } else {
-      profile.aim = localWon ? Math.min(AIM_FULL, (profile.aim || 0) + 2) : Math.max(0, (profile.aim || 0) - 2); saveProfile();
+      profile.aim = personalWon ? Math.min(AIM_FULL, (profile.aim || 0) + 2) : Math.max(0, (profile.aim || 0) - 2); saveProfile();
     }
     refreshProgressUI();
-    const aimNow = profile.aim | 0;
-    if (winner === meIdx) showToast(aimNow >= AIM_FULL ? '🎯 Aim line COMPLETE — target locked!' : ('🎯 +2 trajectory (' + aimNow + '/' + AIM_FULL + ')'), 150);
-    else if (aimBefore > 0) showToast(aimBefore >= AIM_FULL ? '🎯 Target lost — win it back (' + aimNow + '/' + AIM_FULL + ')' : ('🎯 -2 trajectory (' + aimNow + '/' + AIM_FULL + ')'), 150);
-    awardXp(localWon ? 75 : 10); // R-audit L1: XP plin doar la victorie locală; înfrângere = consolare mică
+    // toast aim: în 2-player anunță câștigătorul pe locul lui (P1/P2); altfel din perspectiva mea
+    if (Array.isArray(state.aimP) && !mpActive && botPlayer < 0) {
+      const wv = state.aimP[winner] | 0;
+      showToast(wv >= AIM_FULL ? ('🎯 P' + (winner + 1) + ' — aim line COMPLETE!') : ('🎯 P' + (winner + 1) + ' +2 trajectory (' + wv + '/' + AIM_FULL + ')'), 150);
+    } else {
+      const myv = profile.aim | 0;
+      if (winner === meIdx) showToast(myv >= AIM_FULL ? '🎯 Aim line COMPLETE — target locked!' : ('🎯 +2 trajectory (' + myv + '/' + AIM_FULL + ')'), 150);
+      else if (aimBefore > 0) showToast((aimBefore >= AIM_FULL && myv < AIM_FULL) ? ('🎯 Target lost — win it back (' + myv + '/' + AIM_FULL + ')') : ('🎯 -2 trajectory (' + myv + '/' + AIM_FULL + ')'), 150);
+    }
+    awardXp(personalWon ? 75 : 10); // XP plin doar pt victoria profilului; altfel consolare mică
     sfxWin();
   } else {
     winRun = 0;
@@ -2413,7 +2452,7 @@ function buildWGrid() {
     grid.appendChild(tile);
   }
 }
-function openW() { if (botPlayer >= 0 && state.turn === botPlayer) return; audioOn(); buildWGrid(); const o = document.getElementById('woverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
+function openW() { if (botPlayer >= 0 && state.turn === botPlayer) return; updateCompactUI(); audioOn(); buildWGrid(); const o = document.getElementById('woverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
 function closeW() { const o = document.getElementById('woverlay'); o.classList.add('hidden'); o.style.display = 'none'; }
 document.getElementById('wbtn').addEventListener('click', openW);
 document.getElementById('wclose').addEventListener('click', closeW);
@@ -2466,7 +2505,7 @@ document.getElementById('daily').addEventListener('click', () => {
 
 // ════════════════════════ LOBBY ONLINE ════════════════════════
 function lobbyStatus(msg) { const s = document.getElementById('lstatus'); if (s) s.textContent = msg || ''; }
-function openLobby() { audioOn(); document.getElementById('lshare').classList.add('hidden'); lobbyStatus(''); const l = document.getElementById('lobby'); l.classList.remove('hidden'); l.style.display = 'flex'; }
+function openLobby() { updateCompactUI(); audioOn(); document.getElementById('lshare').classList.add('hidden'); lobbyStatus(''); const l = document.getElementById('lobby'); l.classList.remove('hidden'); l.style.display = 'flex'; }
 function closeLobby() { const l = document.getElementById('lobby'); l.classList.add('hidden'); l.style.display = 'none'; }
 function randCode() { const A = 'ABCDEFGHJKLMNPRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 4; i++) c += A[Math.floor(Math.random() * A.length)]; return c; }
 let mpCode = '';
@@ -2496,6 +2535,17 @@ document.getElementById('online').addEventListener('click', () => { openLobby();
 document.getElementById('lcreate').addEventListener('click', hostRoom);
 document.getElementById('ljoin').addEventListener('click', () => joinRoomUI(document.getElementById('lcode').value));
 document.getElementById('lclose').addEventListener('click', closeLobby);
+document.getElementById('lobby').addEventListener('click', (e) => { if (e.target.id === 'lobby') closeLobby(); });
+// Escape închide orice overlay deschis (belt-and-suspenders dacă un buton Close ar fi tăiat)
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const open = (id) => { const el = document.getElementById(id); return el && !el.classList.contains('hidden') && el.style.display !== 'none'; };
+  if (open('howOverlay')) closeHowTo();
+  else if (open('shopOverlay')) closeShop();
+  else if (open('setOverlay')) closeSettings();
+  else if (open('woverlay')) closeW();
+  else if (open('lobby')) closeLobby();
+});
 document.getElementById('lcopy').addEventListener('click', () => {
   const link = 'https://ccsm81.github.io/gorillas/?r=' + mpCode;
   if (navigator.share) navigator.share({ text: 'Come play Gorillas! ' + link }).catch(() => {});
@@ -2512,7 +2562,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v33';
+const APP_VERSION = 'v34';
 (function () {
   const v = document.getElementById('ver'); if (!v) return;
   v.textContent = 'Gorillas ' + APP_VERSION + ' ⟳';

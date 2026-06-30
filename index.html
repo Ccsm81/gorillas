@@ -263,10 +263,10 @@
   /* ── overlays (shop / settings) ── */
   .ovl { display: none; position: fixed; inset: 0; z-index: 60; background: rgba(5,2,12,0.82); align-items: center; justify-content: center; padding: 14px; }
   .ovl:not(.hidden) { display: flex; }
-  .osheet { background: #1a0d2e; border: 1px solid #5a3e6e; border-radius: 14px; padding: 16px; max-width: 460px; width: 100%; max-height: 92vh; max-height: 92dvh; max-height: 92svh; overflow-y: auto; -webkit-overflow-scrolling: touch; color: #eee; }
-  .otitle { color: #ffd700; font-size: 18px; text-align: center; margin-bottom: 12px; }
+  .osheet { background: #1a0d2e; border: 1px solid #5a3e6e; border-radius: 14px; padding: 16px; max-width: 460px; width: 100%; max-height: 92vh; max-height: 92dvh; max-height: 92svh; overflow-y: auto; -webkit-overflow-scrolling: touch; color: #eee; display: flex; flex-direction: column; }
+  .otitle { color: #ffd700; font-size: 18px; text-align: center; margin-bottom: 12px; flex: 0 0 auto; position: sticky; top: -16px; background: #1a0d2e; padding: 6px 0; z-index: 3; }
   .ocoins { color: #ffd24a; font-size: 14px; margin-left: 8px; }
-  .oclose { display: block; width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; }
+  .oclose { display: block; width: 100%; margin-top: 12px; padding: 12px; font-size: 15px; flex: 0 0 auto; position: sticky; bottom: -16px; background: #2a1840; z-index: 3; }
   .orow { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 14px; }
   .orow input[type=range] { flex: 1; accent-color: #ffd700; }
   .orow2 { font-size: 12px; color: #cbb8e0; margin-top: 10px; }
@@ -281,23 +281,21 @@
   /* tutorial */
   #tut { display: none; }
   #tut.show { display: flex; position: fixed; inset: 0; z-index: 100; background: rgba(5,2,12,0.88); align-items: center; justify-content: center; padding: 20px; }
-  .tutbox { background: #1a0d2e; border: 2px solid #ffd700; border-radius: 14px; padding: 18px 20px; max-width: 420px; text-align: center; color: #eee; font-size: 15px; line-height: 1.5; }
+  .tutbox { background: #1a0d2e; border: 2px solid #ffd700; border-radius: 14px; padding: 18px 20px; max-width: 420px; max-height: 92vh; max-height: 92svh; overflow-y: auto; text-align: center; color: #eee; font-size: 15px; line-height: 1.5; }
   .tutbig { font-size: 40px; margin-bottom: 6px; }
-  /* ── landscape scund (telefoane în lat: iPhone etc.) — overlay-uri care ÎNCAP ── */
-  @media (max-height: 520px) {
-    .ovl { padding: 6px; padding-left: max(6px, env(safe-area-inset-left)); padding-right: max(6px, env(safe-area-inset-right)); align-items: flex-start; }
-    .osheet { padding: 10px 12px; max-width: 94vw; max-height: 96svh; margin-top: 2px; }
-    .otitle { font-size: 15px; margin-bottom: 6px; }
-    #shopGrid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
-    .stile { padding: 4px 2px; border-radius: 8px; gap: 2px; }
-    .sgor { width: 40px; height: 44px; }
-    .snm { font-size: 9px; }
-    .sbtn { font-size: 9px; }
-    .oclose { position: sticky; bottom: -10px; margin-top: 8px; padding: 9px; background: #2a1840; }
-    #tut.show { padding: 6px; align-items: flex-start; }
-    .tutbox { max-height: 96svh; overflow-y: auto; padding: 12px 16px; font-size: 13px; line-height: 1.4; }
-    .tutbig { font-size: 26px; margin-bottom: 2px; }
-  }
+  /* ── COMPACT (telefoane în landscape) — clasa .compact-ui e pusă pe <body> din JS după window.innerHeight
+       (nu mă bazez pe @media max-height, care pe iOS Safari nu se aplică fiabil în landscape) ── */
+  body.compact-ui .ovl { padding: 6px; padding-left: max(6px, env(safe-area-inset-left)); padding-right: max(6px, env(safe-area-inset-right)); align-items: flex-start; }
+  body.compact-ui .osheet { padding: 10px 12px; max-width: 96vw; }
+  body.compact-ui .otitle { font-size: 15px; margin-bottom: 4px; padding: 4px 0; }
+  body.compact-ui #shopGrid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  body.compact-ui .stile { padding: 4px 2px; border-radius: 8px; gap: 2px; }
+  body.compact-ui .sgor { width: 40px; height: 44px; }
+  body.compact-ui .snm, body.compact-ui .sbtn { font-size: 9px; }
+  body.compact-ui .oclose { padding: 9px; margin-top: 8px; }
+  body.compact-ui #tut.show { padding: 6px; align-items: flex-start; }
+  body.compact-ui .tutbox { padding: 12px 16px; font-size: 13px; line-height: 1.4; }
+  body.compact-ui .tutbig { font-size: 26px; margin-bottom: 2px; }
   .tutsub { font-size: 12px; color: #cbb8e0; }
   #tutClose { margin-top: 14px; padding: 10px 18px; font-size: 15px; }
 
@@ -729,7 +727,17 @@ function buildShop() {
     grid.appendChild(tile);
   }
 }
-function openShop() { audioOn(); buildShop(); const o = document.getElementById('shopOverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
+// Detectează ecran COMPACT (telefon în landscape) măsurând dimensiunile reale — sigur pe iOS Safari,
+// unde @media (max-height) nu se aplică fiabil în landscape. Setează clasa pe <body>.
+function updateCompactUI() {
+  const w = window.innerWidth || 0, h = window.innerHeight || 0;
+  const compact = w > h && h < 600;   // landscape + înălțime mică => telefon
+  if (document.body) document.body.classList.toggle('compact-ui', compact);
+}
+try { updateCompactUI(); } catch (e) {}
+window.addEventListener('resize', updateCompactUI);
+window.addEventListener('orientationchange', () => setTimeout(updateCompactUI, 160));
+function openShop() { updateCompactUI(); audioOn(); buildShop(); const o = document.getElementById('shopOverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
 function closeShop() { const o = document.getElementById('shopOverlay'); o.classList.add('hidden'); o.style.display = 'none'; }
 
 // ════════════════════════ STATS + ACHIEVEMENTS ════════════════════════
@@ -781,7 +789,7 @@ function drawCrate() {
 }
 
 // ════════════════════════ SETTINGS + EXPORT/IMPORT PROFIL ════════════════════════
-function openSettings() { audioOn(); const v = document.getElementById('setVol'); if (v) v.value = Math.round(masterVol() * 100); const m = document.getElementById('setMusic'); if (m) m.checked = !!profile.settings.music; const o = document.getElementById('setOverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
+function openSettings() { updateCompactUI(); audioOn(); const v = document.getElementById('setVol'); if (v) v.value = Math.round(masterVol() * 100); const m = document.getElementById('setMusic'); if (m) m.checked = !!profile.settings.music; const o = document.getElementById('setOverlay'); o.classList.remove('hidden'); o.style.display = 'flex'; }
 function closeSettings() { const o = document.getElementById('setOverlay'); o.classList.add('hidden'); o.style.display = 'none'; }
 function exportProfile() {
   try {
@@ -1323,7 +1331,13 @@ function endRound() {
       const COMBO = { 2: 'DOUBLE!', 3: 'TRIPLE!', 4: 'RAMPAGE!', 5: 'UNSTOPPABLE!', 7: 'GODLIKE!', 10: 'LEGENDARY!' };
       if (COMBO[winRun]) { const bonus = winRun * 5; awardXp(bonus); state.bigText = { msg: '🔥 ' + COMBO[winRun] + '  +' + bonus + ' XP', t: 110 }; state.flash = Math.max(state.flash, 0.5); }
       awardCoins(3); bumpStat('wins'); setStatMax('bestStreak', winRun); checkAch();   // monedă + recorduri + achievements
-    } else { winRun = 0; }
+    } else {
+      winRun = 0;
+      // R1: -2 puncte de traiectorie la FIECARE rundă pierdută (minim 0) — simetric cu +2 la victorie.
+      const before = profile.aim || 0;
+      profile.aim = Math.max(0, before - 2); saveProfile(); refreshProgressUI();
+      if (before > 0) showToast('🎯 -2 trajectory (aim ' + profile.aim + ')', 160);
+    }
     awardXp(localWon ? 75 : 10); // R-audit L1: XP plin doar la victorie locală; înfrângere = consolare mică
     sfxWin();
   } else {
@@ -2368,7 +2382,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v29';
+const APP_VERSION = 'v30';
 (function () {
   const v = document.getElementById('ver'); if (!v) return;
   v.textContent = 'Gorillas ' + APP_VERSION + ' ⟳';

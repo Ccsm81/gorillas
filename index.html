@@ -684,6 +684,7 @@ const SKINS = [
   { id:'alien',   name:'Alien',   cost:55,  body:'#9a5fd0', limb:'#6a3fa0', face:'#c89aff' },
   { id:'ice',     name:'Ice',     cost:70,  body:'#6ab0d0', limb:'#3a80a0', face:'#bfe8f5' },
   { id:'panda',   name:'Panda',   cost:90,  body:'#eef0f2', limb:'#2a2a2e', face:'#ffffff' },
+  { id:'capybara',name:'Capybara',cost:120, body:'#9a7a52', limb:'#6e5236', face:'#caa878' },
   { id:'gold',    name:'Golden',  cost:150, body:'#d4af37', limb:'#9c7a17', face:'#ffe680' },
 ];
 function skinById(id) { return SKINS.find(s => s.id === id) || SKINS[0]; }
@@ -1697,6 +1698,18 @@ function drawIce(c, x, y, sk) {
   c.fillStyle = 'rgba(255,255,255,0.6)'; c.save(); c.translate(x - 3, y - 22); c.rotate(0.4); c.beginPath(); c.ellipse(0, 0, 2, 4, 0, 0, TAU); c.fill(); c.restore();
   c.fillStyle = '#0a3a4a'; c.beginPath(); c.arc(x - 4, y - 20, 1.6, 0, TAU); c.fill(); c.beginPath(); c.arc(x + 4, y - 20, 1.6, 0, TAU); c.fill();
 }
+function drawCapybara(c, x, y, sk) {
+  c.fillStyle = sk.limb; c.fillRect(x - 11, y + 8, 6, 12); c.fillRect(x + 5, y + 8, 6, 12);   // picioare scurte
+  c.fillStyle = sk.body; c.beginPath(); c.ellipse(x, y + 1, 15, 13, 0, 0, TAU); c.fill();      // corp barel
+  c.beginPath(); c.ellipse(x, y - 15, 12, 11, 0, 0, TAU); c.fill();                            // cap mare, blocky
+  c.beginPath(); c.ellipse(x - 8, y - 24, 3, 3.5, 0, 0, TAU); c.fill();                        // urechi
+  c.beginPath(); c.ellipse(x + 8, y - 24, 3, 3.5, 0, 0, TAU); c.fill();
+  c.fillStyle = sk.face; c.beginPath(); c.ellipse(x, y - 9, 8.5, 6, 0, 0, TAU); c.fill();        // bot deschis
+  c.fillStyle = '#3a2a1e'; c.beginPath(); c.ellipse(x, y - 11, 4.5, 3, 0, 0, TAU); c.fill();     // nas blunt
+  c.fillStyle = '#000'; c.beginPath(); c.arc(x - 6, y - 18, 1.9, 0, TAU); c.fill(); c.beginPath(); c.arc(x + 6, y - 18, 1.9, 0, TAU); c.fill();  // ochi mici, sus
+  c.fillStyle = '#fff'; c.fillRect(x - 6.8, y - 19, 1, 1); c.fillRect(x + 5.2, y - 19, 1, 1);
+  c.strokeStyle = '#5a4030'; c.lineWidth = 1; c.beginPath(); c.moveTo(x - 2.5, y - 6); c.lineTo(x + 2.5, y - 6); c.stroke();  // gură chill
+}
 function drawCharacter(c, id, x, y, lUp, rUp) {
   const sk = skinById(id);
   if (id === 'robot') drawRobot(c, x, y, sk);
@@ -1704,6 +1717,7 @@ function drawCharacter(c, id, x, y, lUp, rUp) {
   else if (id === 'alien') drawAlien(c, x, y, sk);
   else if (id === 'ice') drawIce(c, x, y, sk);
   else if (id === 'panda') drawPanda(c, x, y, sk);
+  else if (id === 'capybara') drawCapybara(c, x, y, sk);
   else if (id === 'gold') drawGoldGorilla(c, x, y, sk, lUp, rUp);
   else drawGorillaBody(c, x, y, sk, lUp, rUp);
 }
@@ -2284,7 +2298,7 @@ window.__mpPeerLeft = () => { showToast('⚠️ Opponent disconnected — waitin
 })();
 
 // versiune vizibilă (ca să știm exact ce rulează)
-const APP_VERSION = 'v22';
+const APP_VERSION = 'v23';
 (function () { const v = document.getElementById('ver'); if (v) v.textContent = 'Gorillas ' + APP_VERSION; })();
 
 // înregistrează service worker + AUTO-REÎNCARCĂ la versiune nouă (nu mai rămâi blocat pe cache)

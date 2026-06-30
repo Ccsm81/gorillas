@@ -43,7 +43,7 @@ STAGE="$BUILD/dmg"
 rm -rf "$STAGE"; mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
-DMG="$DIST/Gorillas-v22.dmg"
+DMG="$DIST/Gorillas-v23.dmg"
 rm -f "$DMG"
 hdiutil create -volname "Gorillas" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
 
